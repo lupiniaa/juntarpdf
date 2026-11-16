@@ -8,16 +8,14 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Bibliotecas PDF & Office Oficiais e Estáveis -->
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
-  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <!-- Bibliotecas PDF & Office Estáveis -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
@@ -237,11 +235,10 @@
   </div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
-    });
+    // Configuração segura do Worker do PDF.js
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
 
     const CHAVE_PIX_COPIA_COLA = "00020126360014BR.GOV.BCB.PIX0114+55869982748205204000053039865802BR5903PIX6008Brasilia62070503***6304BED2";
     let ferramentaAtual = null;
@@ -250,88 +247,37 @@
     let isDrawing = false;
     let hasDrawnSignature = false;
 
-    // Estado para pré-visualização e manipulação de ficheiros/páginas
     let mergeFilesArray = [];
     let selectedSplitPages = new Set();
     let currentRotationAngle = 0;
+    let previewAbortController = null;
 
     const CONFIG_FERRAMENTAS = {
-      merge: {
-        icon: '📑', title: 'Juntar PDF', desc: 'Combine vários ficheiros PDF num único documento ordenado.',
-        accept: '.pdf', multiple: true, hint: 'Selecione múltiplos ficheiros .pdf'
-      },
-      split: {
-        icon: '✂️', title: 'Dividir / Extrair PDF', desc: 'Clique nas páginas que deseja extrair ou digite o intervalo.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      rotate: {
-        icon: '🔄', title: 'Girar PDF', desc: 'Rotacione as páginas do documento e pré-visualize o resultado.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      pdf2word: {
-        icon: '📝', title: 'PDF para Word', desc: 'Transforme PDF em arquivos DOCX editáveis.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      pdf2excel: {
-        icon: '📊', title: 'PDF para Excel', desc: 'Extraia dados para planilhas XLSX.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      pdf2ppt: {
-        icon: '📽️', title: 'PDF para PowerPoint', desc: 'Converta páginas de PDF em slides PPTX.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      pdf2jpg: {
-        icon: '🖼️', title: 'PDF para JPG', desc: 'Exporte páginas em arquivos JPG ou ZIP.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      word2pdf: {
-        icon: '📄', title: 'Word para PDF', desc: 'DOCX para PDF com máxima qualidade.',
-        accept: '.docx', multiple: false, hint: 'Selecione 1 ficheiro .docx'
-      },
-      excel2pdf: {
-        icon: '📈', title: 'Excel para PDF', desc: 'Planilhas XLSX/XLS ajustadas à página PDF.',
-        accept: '.xlsx,.xls,.csv', multiple: false, hint: 'Selecione 1 ficheiro .xlsx, .xls ou .csv'
-      },
-      ppt2pdf: {
-        icon: '📋', title: 'PowerPoint para PDF', desc: 'Converta texto/estrutura PPTX para PDF.',
-        accept: '.pptx', multiple: false, hint: 'Selecione 1 ficheiro .pptx'
-      },
-      jpg2pdf: {
-        icon: '📷', title: 'JPG para PDF', desc: 'Transforme uma ou várias imagens em PDF.',
-        accept: 'image/jpeg,image/png,image/jpg', multiple: true, hint: 'Selecione imagens .jpg ou .png'
-      },
-      protect: {
-        icon: '🔐', title: 'Proteger PDF', desc: 'Encripte o documento com senha de abertura.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      unlock: {
-        icon: '🔓', title: 'Desbloquear PDF', desc: 'Remova restrições ou senha de um PDF.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      sign: {
-        icon: '✍️', title: 'Assinar PDF', desc: 'Desenhe a sua assinatura e aplique no documento.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      },
-      watermark: {
-        icon: '💧', title: "Marca d'água", desc: 'Adicione texto ou imagem transparente no documento.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
-      }
+      merge: { icon: '📑', title: 'Juntar PDF', desc: 'Combine vários ficheiros PDF num único documento ordenado.', accept: '.pdf', multiple: true, hint: 'Selecione múltiplos ficheiros .pdf' },
+      split: { icon: '✂️', title: 'Dividir / Extrair PDF', desc: 'Clique nas páginas que deseja extrair ou digite o intervalo.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      rotate: { icon: '🔄', title: 'Girar PDF', desc: 'Rotacione as páginas do documento e pré-visualize o resultado.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      pdf2word: { icon: '📝', title: 'PDF para Word', desc: 'Transforme PDF em arquivos DOCX/DOC editáveis.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      pdf2excel: { icon: '📊', title: 'PDF para Excel', desc: 'Extraia dados para planilhas XLSX.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      pdf2ppt: { icon: '📽️', title: 'PDF para PowerPoint', desc: 'Converta páginas de PDF em slides PPTX.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      pdf2jpg: { icon: '🖼️', title: 'PDF para JPG', desc: 'Exporte páginas em arquivos JPG ou ZIP.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      word2pdf: { icon: '📄', title: 'Word para PDF', desc: 'DOCX para PDF com máxima qualidade.', accept: '.docx', multiple: false, hint: 'Selecione 1 ficheiro .docx' },
+      excel2pdf: { icon: '📈', title: 'Excel para PDF', desc: 'Planilhas XLSX/XLS ajustadas à página PDF.', accept: '.xlsx,.xls,.csv', multiple: false, hint: 'Selecione 1 ficheiro .xlsx, .xls ou .csv' },
+      ppt2pdf: { icon: '📋', title: 'PowerPoint para PDF', desc: 'Converta texto/estrutura PPTX para PDF.', accept: '.pptx', multiple: false, hint: 'Selecione 1 ficheiro .pptx' },
+      jpg2pdf: { icon: '📷', title: 'JPG para PDF', desc: 'Transforme uma ou várias imagens em PDF.', accept: 'image/jpeg,image/png,image/jpg', multiple: true, hint: 'Selecione imagens .jpg ou .png' },
+      protect: { icon: '🔐', title: 'Proteger PDF', desc: 'Encripte o documento com senha de abertura.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      unlock: { icon: '🔓', title: 'Desbloquear PDF', desc: 'Remova restrições ou senha de um PDF.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      sign: { icon: '✍️', title: 'Assinar PDF', desc: 'Desenhe a sua assinatura e aplique no documento.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' },
+      watermark: { icon: '💧', title: "Marca d'água", desc: 'Adicione texto ou imagem transparente no documento.', accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf' }
     };
 
-    // --- CONTROLO DE MODAIS ---
-    function abrirModalPix() {
-      document.getElementById('pix-modal').classList.remove('hidden');
-    }
-
-    function fecharModalPix() {
-      document.getElementById('pix-modal').classList.add('hidden');
-    }
+    function abrirModalPix() { document.getElementById('pix-modal').classList.remove('hidden'); }
+    function fecharModalPix() { document.getElementById('pix-modal').classList.add('hidden'); }
 
     function copiarPix() {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(CHAVE_PIX_COPIA_COLA).then(() => {
-          alert("✅ Código Pix Copia e Cola copiado! Muito obrigado por apoiar o site.");
-        }).catch(() => fallbackCopiarPix());
+        navigator.clipboard.writeText(CHAVE_PIX_COPIA_COLA)
+          .then(() => alert("✅ Código Pix Copia e Cola copiado! Muito obrigado por apoiar o site."))
+          .catch(() => fallbackCopiarPix());
       } else {
         fallbackCopiarPix();
       }
@@ -345,6 +291,7 @@
     }
 
     function abrirFerramenta(tipo) {
+      if (previewAbortController) previewAbortController.abort = true;
       ferramentaAtual = tipo;
       const cfg = CONFIG_FERRAMENTAS[tipo];
       
@@ -369,31 +316,36 @@
 
       ocultarStatus();
       montarOpcoesDinamicas(tipo);
-      
       document.getElementById('tool-modal').classList.remove('hidden');
     }
 
     function fecharModalFerramenta() {
+      if (previewAbortController) previewAbortController.abort = true;
       document.getElementById('tool-modal').classList.add('hidden');
       ferramentaAtual = null;
     }
+
+    // Cedência de ciclo para não congelar a UI
+    const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 15));
 
     async function aoSelecionarFicheiros() {
       const files = Array.from(document.getElementById('file-input').files);
       if (files.length === 0) return;
 
       ocultarStatus();
+      if (previewAbortController) previewAbortController.abort = true;
+      previewAbortController = { abort: false };
 
       if (ferramentaAtual === 'merge') {
         mergeFilesArray = mergeFilesArray.concat(files);
-        await renderizarPreviewMerge();
+        await renderizarPreviewMerge(previewAbortController);
       } else if (ferramentaAtual === 'split') {
         atualizarListaSimples(files);
-        await renderizarPreviewSplit(files[0]);
+        await renderizarPreviewSplit(files[0], previewAbortController);
       } else if (ferramentaAtual === 'rotate') {
         atualizarListaSimples(files);
         currentRotationAngle = 0;
-        await renderizarPreviewRotate(files[0]);
+        await renderizarPreviewRotate(files[0], previewAbortController);
       } else {
         atualizarListaSimples(files);
       }
@@ -409,9 +361,9 @@
       }
     }
 
-    // --- PRÉ-VISUALIZAÇÕES (JUNTAR, DIVIDIR, GIRAR) ---
-    async function gerarMiniaturaPaginaPDF(file, pageNum = 1, scale = 0.4) {
+    async function gerarMiniaturaPaginaPDF(file, pageNum = 1, scale = 0.3) {
       try {
+        if (typeof pdfjsLib === 'undefined') return { dataUrl: null, numPages: '?' };
         const bytes = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
         const page = await pdf.getPage(pageNum);
@@ -420,13 +372,13 @@
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        return { dataUrl: canvas.toDataURL('image/jpeg', 0.75), numPages: pdf.numPages };
+        return { dataUrl: canvas.toDataURL('image/jpeg', 0.7), numPages: pdf.numPages };
       } catch (e) {
         return { dataUrl: null, numPages: '?' };
       }
     }
 
-    async function renderizarPreviewMerge() {
+    async function renderizarPreviewMerge(token) {
       const previewArea = document.getElementById('preview-area');
       const grid = document.getElementById('preview-grid');
       document.getElementById('preview-title').textContent = `Arquivos na fila (${mergeFilesArray.length})`;
@@ -436,301 +388,14 @@
       grid.innerHTML = '';
 
       for (let idx = 0; idx < mergeFilesArray.length; idx++) {
+        if (token && token.abort) return;
         const file = mergeFilesArray[idx];
-        const thumb = await gerarMiniaturaPaginaPDF(file, 1, 0.35);
+        const thumb = await gerarMiniaturaPaginaPDF(file, 1, 0.3);
+        await yieldToMain();
         
         const card = document.createElement('div');
         card.className = 'bg-white border border-slate-300 rounded-lg p-2 flex flex-col items-center text-center shadow-sm relative';
         card.innerHTML = `
           <span class="absolute top-1 left-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#${idx + 1}</span>
           <button type="button" onclick="removerArquivoMerge(${idx})" class="absolute top-1 right-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold w-5 h-5 rounded-full">×</button>
-          ${thumb.dataUrl ? `<img src="${thumb.dataUrl}" class="h-24 object-contain my-1 border border-slate-100" />` : `<div class="h-24 flex items-center justify-center text-3xl">📄</div>`}
-          <p class="text-[11px] font-semibold text-slate-700 truncate w-full" title="${file.name}">${file.name}</p>
-          <span class="text-[10px] text-slate-400">${thumb.numPages} pág(s)</span>
-          <div class="flex gap-2 mt-1.5">
-            <button type="button" onclick="moverArquivoMerge(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">◀</button>
-            <button type="button" onclick="moverArquivoMerge(${idx}, 1)" ${idx === mergeFilesArray.length - 1 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">▶</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      }
-    }
-
-    async function moverArquivoMerge(index, direction) {
-      const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= mergeFilesArray.length) return;
-      const temp = mergeFilesArray[index];
-      mergeFilesArray[index] = mergeFilesArray[newIndex];
-      mergeFilesArray[newIndex] = temp;
-      await renderizarPreviewMerge();
-    }
-
-    async function removerArquivoMerge(index) {
-      mergeFilesArray.splice(index, 1);
-      if (mergeFilesArray.length === 0) {
-        document.getElementById('preview-area').classList.add('hidden');
-      } else {
-        await renderizarPreviewMerge();
-      }
-    }
-
-    async function renderizarPreviewSplit(file) {
-      const previewArea = document.getElementById('preview-area');
-      const grid = document.getElementById('preview-grid');
-      document.getElementById('preview-title').textContent = 'Pré-visualização das Páginas';
-      document.getElementById('preview-subtitle').textContent = 'Clique nas páginas para selecionar';
-      
-      previewArea.classList.remove('hidden');
-      grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-4">A carregar miniaturas...</div>';
-      selectedSplitPages.clear();
-
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      grid.innerHTML = '';
-
-      const maxPreview = Math.min(pdf.numPages, 30); // Limite de 30 miniaturas para manter velocidade
-      for (let i = 1; i <= maxPreview; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 0.35 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-        const card = document.createElement('div');
-        card.id = `split-thumb-${i}`;
-        card.onclick = () => alternarPaginaSplit(i);
-        card.className = 'bg-white border-2 border-slate-200 rounded-lg p-2 flex flex-col items-center cursor-pointer transition hover:border-blue-400';
-        card.innerHTML = `
-          <img src="${canvas.toDataURL('image/jpeg', 0.75)}" class="h-24 object-contain mb-1" />
-          <span class="text-xs font-bold text-slate-700">Página ${i}</span>
-        `;
-        grid.appendChild(card);
-      }
-      if (pdf.numPages > 30) {
-        const info = document.createElement('div');
-        info.className = 'col-span-full text-center text-xs text-slate-500 pt-2';
-        info.textContent = `Mostrando 30 de ${pdf.numPages} páginas. Pode digitar qualquer número no campo abaixo.`;
-        grid.appendChild(info);
-      }
-    }
-
-    function alternarPaginaSplit(pageNum) {
-      const card = document.getElementById(`split-thumb-${pageNum}`);
-      if (selectedSplitPages.has(pageNum)) {
-        selectedSplitPages.delete(pageNum);
-        if (card) card.classList.remove('page-thumb-selected');
-      } else {
-        selectedSplitPages.add(pageNum);
-        if (card) card.classList.add('page-thumb-selected');
-      }
-      const sorted = Array.from(selectedSplitPages).sort((a, b) => a - b);
-      const input = document.getElementById('opt-pages');
-      if (input) input.value = sorted.join(', ');
-    }
-
-    async function renderizarPreviewRotate(file) {
-      const previewArea = document.getElementById('preview-area');
-      const grid = document.getElementById('preview-grid');
-      document.getElementById('preview-title').textContent = 'Pré-visualização da Rotação';
-      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
-      
-      previewArea.classList.remove('hidden');
-      grid.innerHTML = '';
-
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const maxPreview = Math.min(pdf.numPages, 12);
-
-      for (let i = 1; i <= maxPreview; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 0.35 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center overflow-hidden';
-        card.innerHTML = `
-          <div class="h-28 flex items-center justify-center">
-            <img src="${canvas.toDataURL('image/jpeg', 0.75)}" style="transform: rotate(${currentRotationAngle}deg); transition: transform 0.25s ease;" class="max-h-24 max-w-full object-contain rotate-preview-img" />
-          </div>
-          <span class="text-xs font-bold text-slate-600 mt-1">Pág. ${i}</span>
-        `;
-        grid.appendChild(card);
-      }
-    }
-
-    function aplicarRotacaoPreview(graus) {
-      currentRotationAngle = (currentRotationAngle + graus + 360) % 360;
-      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
-      document.getElementById('rotate-angle-display').textContent = `${currentRotationAngle}°`;
-      document.querySelectorAll('.rotate-preview-img').forEach(img => {
-        img.style.transform = `rotate(${currentRotationAngle}deg)`;
-      });
-    }
-
-    function mostrarStatus(msg, isError = false) {
-      const el = document.getElementById('status-msg');
-      el.textContent = msg;
-      el.className = `text-sm p-3 rounded-lg mb-4 text-center font-medium ${isError ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`;
-      el.classList.remove('hidden');
-    }
-
-    function ocultarStatus() {
-      document.getElementById('status-msg').classList.add('hidden');
-    }
-
-    function montarOpcoesDinamicas(tipo) {
-      const container = document.getElementById('dynamic-options');
-      container.innerHTML = '';
-
-      if (tipo === 'split') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Páginas selecionadas ou intervalo (ex: 1, 2, 4-6):</label>
-            <input type="text" id="opt-pages" placeholder="Clique nas miniaturas acima ou digite ex: 1, 3-5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
-          </div>`;
-      } else if (tipo === 'rotate') {
-        container.innerHTML = `
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-            <span class="text-sm font-bold text-slate-700">Rotação: <span id="rotate-angle-display" class="text-blue-600">0°</span></span>
-            <div class="flex gap-2">
-              <button type="button" onclick="aplicarRotacaoPreview(-90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">↺ -90° (Esquerda)</button>
-              <button type="button" onclick="aplicarRotacaoPreview(90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">↻ +90° (Direita)</button>
-              <button type="button" onclick="aplicarRotacaoPreview(180)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">⇅ 180°</button>
-            </div>
-          </div>`;
-      } else if (tipo === 'protect') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Defina uma senha para proteger o PDF:</label>
-            <input type="password" id="opt-password" placeholder="Digite a senha secreta" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
-          </div>`;
-      } else if (tipo === 'unlock') {
-        container.innerHTML = `
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Senha atual do PDF (se houver):</label>
-            <input type="password" id="opt-unlock-password" placeholder="Digite a senha ou deixe vazio para remover restrições" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
-          </div>`;
-      } else if (tipo === 'watermark') {
-        container.innerHTML = `
-          <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">Tipo de Marca d'água:</label>
-              <select id="opt-wm-type" onchange="alternarTipoMarcaDagua()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
-                <option value="text">Texto Transparente</option>
-                <option value="image">Imagem Transparente (PNG / JPG)</option>
-              </select>
-            </div>
-            <div id="wm-text-group" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Texto:</label>
-                <input type="text" id="opt-watermark" value="CONFIDENCIAL" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Opacidade (0.1 a 1.0):</label>
-                <input type="number" id="opt-wm-opacity" value="0.35" min="0.1" max="1" step="0.05" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
-              </div>
-            </div>
-            <div id="wm-image-group" class="hidden">
-              <label class="block text-xs font-bold text-slate-600 mb-1">Selecione a imagem da marca d'água (PNG/JPG):</label>
-              <input type="file" id="opt-wm-image" accept="image/png,image/jpeg" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white" />
-            </div>
-          </div>`;
-      } else if (tipo === 'sign') {
-        container.innerHTML = `
-          <div class="space-y-3">
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <label class="text-xs font-bold text-slate-600">Desenhe sua assinatura abaixo:</label>
-                <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline cursor-pointer font-semibold">Limpar Quadro</button>
-              </div>
-              <canvas id="signature-pad" width="520" height="140" class="w-full border-2 border-slate-300 rounded-lg bg-white"></canvas>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Aplicar na página (0 = última página):</label>
-                <input type="number" id="opt-sign-page" value="0" min="0" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Posição na página:</label>
-                <select id="opt-sign-pos" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
-                  <option value="bottom-right">Canto Inferior Direito</option>
-                  <option value="bottom-center">Inferior Centralizado</option>
-                  <option value="bottom-left">Canto Inferior Esquerdo</option>
-                  <option value="center">Centro da Página</option>
-                </select>
-              </div>
-            </div>
-          </div>`;
-        setTimeout(inicializarCanvasAssinatura, 50);
-      }
-    }
-
-    function alternarTipoMarcaDagua() {
-      const type = document.getElementById('opt-wm-type').value;
-      document.getElementById('wm-text-group').classList.toggle('hidden', type !== 'text');
-      document.getElementById('wm-image-group').classList.toggle('hidden', type !== 'image');
-    }
-
-    function inicializarCanvasAssinatura() {
-      signatureCanvas = document.getElementById('signature-pad');
-      if (!signatureCanvas) return;
-      signatureCtx = signatureCanvas.getContext('2d');
-      signatureCtx.strokeStyle = '#0f172a';
-      signatureCtx.lineWidth = 2.8;
-      signatureCtx.lineCap = 'round';
-      signatureCtx.lineJoin = 'round';
-      hasDrawnSignature = false;
-
-      const getPos = (e) => {
-        const rect = signatureCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return {
-          x: (clientX - rect.left) * (signatureCanvas.width / rect.width),
-          y: (clientY - rect.top) * (signatureCanvas.height / rect.height)
-        };
-      };
-
-      const start = (e) => {
-        isDrawing = true;
-        hasDrawnSignature = true;
-        const p = getPos(e);
-        signatureCtx.beginPath();
-        signatureCtx.moveTo(p.x, p.y);
-      };
-      const move = (e) => {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const p = getPos(e);
-        signatureCtx.lineTo(p.x, p.y);
-        signatureCtx.stroke();
-      };
-      const end = () => { isDrawing = false; };
-
-      signatureCanvas.addEventListener('mousedown', start);
-      signatureCanvas.addEventListener('mousemove', move);
-      signatureCanvas.addEventListener('mouseup', end);
-      signatureCanvas.addEventListener('mouseleave', end);
-      signatureCanvas.addEventListener('touchstart', start);
-      signatureCanvas.addEventListener('touchmove', move);
-      signatureCanvas.addEventListener('touchend', end);
-    }
-
-    function limparAssinatura() {
-      if (signatureCtx && signatureCanvas) {
-        signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-        hasDrawnSignature = false;
-      }
-    }
-
-    function baixarBlob(blob, nomeFicheiro) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nomeFicheiro;
-      document.body.appendChild(a);
-      a.click
+          ${thumb.dataUrl ? `<img src="${thumb.dataUrl}" class="h-24 object-contain my-1 border border-slate-100" />` : `<div class="
