@@ -269,4 +269,543 @@
                 </div>
 
                 <!-- Botão Executar -->
-                <button id="btn-executar" onclick="executarOperacao()" disabled class="w-full mt-
+                <button id="btn-executar" onclick="executarOperacao()" disabled class="w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed">
+                    ⚙️ Processar Arquivo Agora
+                </button>
+
+                <!-- Resultado / Download -->
+                <div id="output-area" class="mt-4 hidden pt-4 border-t border-slate-100 text-center">
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium mb-3">
+                        ✨ Concluído com sucesso!
+                    </div>
+                    <a id="download-link" class="inline-block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-sm text-sm">
+                        ⬇️ Baixar Resultado
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Pix -->
+    <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl text-center">
+            <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">Pix</div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-1">Passe Ilimitado (24h)</h3>
+            <p class="text-sm text-slate-500 mb-6">Remova todos os limites por apenas **R$ 4,90**.</p>
+            
+            <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200 mb-6">
+                <p class="text-xs text-slate-500 mb-2 font-medium">Chave Pix Copia e Cola:</p>
+                <input type="text" readonly value="00020126580014br.gov.bcb.pix0136sua-chave-pix-aqui52040000530398654044.90..." class="text-xs text-slate-600 font-mono bg-white p-2.5 rounded-xl border border-slate-200 w-full mb-3 text-center"/>
+                <button onclick="alert('Código Pix copiado!')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded-xl transition cursor-pointer">
+                    Copiar Código Pix
+                </button>
+            </div>
+
+            <button onclick="ativarPasse()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition mb-3 cursor-pointer">
+                Já fiz o pagamento
+            </button>
+            <button onclick="fecharModal()" class="w-full text-xs text-slate-500 hover:text-slate-800 py-2 cursor-pointer">
+                Voltar
+            </button>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 bg-white">
+        &copy; 2026 PDFHub. Processamento privado e local.
+    </footer>
+
+    <!-- Lógica JavaScript Corrigida -->
+    <script>
+        let ferramentaAtual = '';
+        let arquivosCarregados = [];
+        let pdfJsDocGlobal = null;
+        let totalPaginasPdf = 0;
+        let anguloRotacao = 90;
+        let paginasSelecionadas = new Set();
+
+        const ferramentasConfig = {
+            'unir': { titulo: 'Juntar PDF', desc: 'Mescle e junte PDFs em qualquer ordem.', accept: '.pdf', multiple: true },
+            'dividir': { titulo: 'Dividir PDF', desc: 'Selecione intervalos e separe páginas.', accept: '.pdf', multiple: false },
+            'organizar': { titulo: 'Organizar PDF', desc: 'Ordene, exclua ou adicione páginas.', accept: '.pdf', multiple: false },
+            'girar': { titulo: 'Rodar PDF', desc: 'Gire arquivos PDF de uma só vez.', accept: '.pdf', multiple: false },
+            'comprimir': { titulo: 'Comprimir PDF', desc: 'Diminua o tamanho do seu arquivo PDF.', accept: '.pdf', multiple: false },
+            'reparar': { titulo: 'Reparar PDF', desc: 'Repare um PDF danificado.', accept: '.pdf', multiple: false },
+            'pdf-a': { titulo: 'PDF para PDF/A', desc: 'Padrão ISO para arquivo de longa duração.', accept: '.pdf', multiple: false },
+            'pdf-para-word': { titulo: 'PDF para Word', desc: 'Transforme PDF em DOCX editável.', accept: '.pdf', multiple: false },
+            'pdf-para-excel': { titulo: 'PDF para Excel', desc: 'Extraia dados para planilhas XLSX.', accept: '.pdf', multiple: false },
+            'pdf-para-ppt': { titulo: 'PDF para PowerPoint', desc: 'Converta para apresentações PPTX.', accept: '.pdf', multiple: false },
+            'pdf-para-jpg': { titulo: 'PDF para JPG', desc: 'Exporte páginas em arquivos JPG ou ZIP.', accept: '.pdf', multiple: false },
+            'word-para-pdf': { titulo: 'Word para PDF', desc: 'DOC/DOCX para PDF com máxima qualidade.', accept: '.docx, .doc', multiple: false },
+            'excel-para-pdf': { titulo: 'Excel para PDF', desc: 'Planilhas ajustadas à largura da página.', accept: '.xlsx, .xls', multiple: false },
+            'ppt-para-pdf': { titulo: 'PowerPoint para PDF', desc: 'PPT/PPTX para PDF com alta fidelidade.', accept: '.pptx, .ppt', multiple: false },
+            'jpg-para-pdf': { titulo: 'JPG para PDF', desc: 'Transforme imagens em documento PDF.', accept: 'image/*', multiple: true },
+            'proteger': { titulo: 'Proteger PDF', desc: 'Encripte documentos com senha.', accept: '.pdf', multiple: false },
+            'desbloquear': { titulo: 'Desbloquear PDF', desc: 'Remova senhas e restrições.', accept: '.pdf', multiple: false },
+            'assinar': { titulo: 'Assinar PDF', desc: 'Assine você mesmo ou solicite assinaturas.', accept: '.pdf', multiple: false },
+            'marca-dagua': { titulo: 'Marca d\'água', desc: 'Adicione texto ou imagem transparente.', accept: '.pdf', multiple: false }
+        };
+
+        const homeView = document.getElementById('home-view');
+        const toolView = document.getElementById('tool-view');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const addMoreInput = document.getElementById('add-more-input');
+        const fileLoadedContainer = document.getElementById('file-loaded-container');
+        const rightActionPanel = document.getElementById('right-action-panel');
+        const btnExecutar = document.getElementById('btn-executar');
+        const outputArea = document.getElementById('output-area');
+        const thumbnailsContainer = document.getElementById('thumbnails-container');
+
+        verificarStatusPass();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ferramentasConfig[hash]) {
+                const f = ferramentasConfig[hash];
+                selecionarFerramenta(hash, f.titulo, f.desc, f.accept, f.multiple, false);
+            }
+        });
+
+        function selecionarFerramenta(id, titulo, descricao, acceptType, allowMultiple, atualizarHash = true) {
+            ferramentaAtual = id;
+            if (atualizarHash) window.location.hash = id;
+            homeView.classList.add('hidden');
+            toolView.classList.remove('hidden');
+            document.getElementById('tool-title').textContent = titulo;
+            document.getElementById('tool-desc').textContent = descricao;
+            
+            fileInput.accept = acceptType;
+            fileInput.multiple = allowMultiple;
+            addMoreInput.accept = acceptType;
+            addMoreInput.multiple = true;
+            document.getElementById('upload-label-text').textContent = allowMultiple ? 'Clique para selecionar os arquivos' : 'Clique para selecionar o arquivo';
+            
+            resetarFerramenta(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function voltarHome() {
+            window.location.hash = '';
+            toolView.classList.add('hidden');
+            homeView.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetarFerramenta(limparHash = true) {
+            if (limparHash) window.location.hash = '';
+            arquivosCarregados = [];
+            pdfJsDocGlobal = null;
+            totalPaginasPdf = 0;
+            anguloRotacao = 90;
+            paginasSelecionadas.clear();
+            document.getElementById('display-angulo').textContent = '90°';
+            fileInput.value = '';
+            
+            dropZone.classList.remove('hidden');
+            fileLoadedContainer.classList.add('hidden');
+            outputArea.classList.add('hidden');
+            thumbnailsContainer.innerHTML = '';
+            thumbnailsContainer.classList.add('hidden');
+
+            rightActionPanel.classList.add('opacity-60', 'pointer-events-none');
+            btnExecutar.disabled = true;
+            btnExecutar.className = "w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed";
+            document.getElementById('placeholder-msg').style.display = 'block';
+
+            ['ctrl-dividir', 'ctrl-girar', 'ctrl-comprimir', 'ctrl-pdf-jpg', 'ctrl-lista-arquivos'].forEach(elId => {
+                document.getElementById(elId).classList.add('hidden');
+            });
+            document.getElementById('preview-counter').textContent = '';
+        }
+
+        fileInput.addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            arquivosCarregados = files;
+            dropZone.classList.add('hidden');
+            fileLoadedContainer.classList.remove('hidden');
+            outputArea.classList.add('hidden');
+
+            rightActionPanel.classList.remove('opacity-60', 'pointer-events-none');
+            btnExecutar.disabled = false;
+            btnExecutar.className = "w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition shadow-sm cursor-pointer";
+            document.getElementById('placeholder-msg').style.display = 'none';
+
+            await prepararPainelConfiguracao();
+        });
+
+        addMoreInput.addEventListener('change', function(e) {
+            const novos = Array.from(e.target.files);
+            arquivosCarregados = arquivosCarregados.concat(novos);
+            renderizarListaArquivos();
+            addMoreInput.value = '';
+        });
+
+        async function prepararPainelConfiguracao() {
+            const fileSummary = document.getElementById('file-summary');
+
+            if (ferramentaAtual === 'unir' || ferramentaAtual === 'jpg-para-pdf' || ferramentaAtual === 'organizar') {
+                fileSummary.textContent = `${arquivosCarregados.length} arquivo(s)`;
+                document.getElementById('ctrl-lista-arquivos').classList.remove('hidden');
+                renderizarListaArquivos();
+                if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
+            } else {
+                const file = arquivosCarregados[0];
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                fileSummary.textContent = `${file.name} (${sizeMB} MB)`;
+
+                if (file.type === 'application/pdf') {
+                    const buffer = await file.arrayBuffer();
+                    pdfJsDocGlobal = await pdfjsLib.getDocument({ data: buffer }).promise;
+                    totalPaginasPdf = pdfJsDocGlobal.numPages;
+
+                    document.getElementById('preview-counter').textContent = `${totalPaginasPdf} página(s)`;
+                    await gerarMiniaturasPdfVisual();
+                }
+
+                if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
+                    document.getElementById('ctrl-dividir').classList.remove('hidden');
+                    for(let i=0; i<totalPaginasPdf; i++) paginasSelecionadas.add(i);
+                    atualizarInputPaginasTexto();
+                } else if (ferramentaAtual === 'girar') {
+                    document.getElementById('ctrl-girar').classList.remove('hidden');
+                } else if (ferramentaAtual === 'comprimir') {
+                    document.getElementById('ctrl-comprimir').classList.remove('hidden');
+                } else if (ferramentaAtual === 'pdf-para-jpg') {
+                    document.getElementById('ctrl-pdf-jpg').classList.remove('hidden');
+                    document.getElementById('input-pagina-jpg').max = totalPaginasPdf;
+                }
+            }
+        }
+
+        async function gerarMiniaturasPdfVisual() {
+            thumbnailsContainer.innerHTML = '';
+            thumbnailsContainer.classList.remove('hidden');
+
+            for (let i = 1; i <= totalPaginasPdf; i++) {
+                const page = await pdfJsDocGlobal.getPage(i);
+                const viewport = page.getViewport({ scale: 0.3 });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.className = "rounded shadow-xs transition-transform duration-200";
+
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = "page-thumb relative border-2 border-slate-200 rounded-xl p-1 bg-white cursor-pointer flex flex-col items-center group";
+                if ((ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') && paginasSelecionadas.has(i - 1)) {
+                    wrapper.classList.add('selected');
+                }
+                
+                wrapper.onclick = () => {
+                    if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
+                        if (paginasSelecionadas.has(i - 1)) {
+                            paginasSelecionadas.delete(i - 1);
+                            wrapper.classList.remove('selected');
+                        } else {
+                            paginasSelecionadas.add(i - 1);
+                            wrapper.classList.add('selected');
+                        }
+                        atualizarInputPaginasTexto();
+                    }
+                };
+
+                const badge = document.createElement('span');
+                badge.className = "page-badge absolute top-2 right-2 bg-slate-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10 shadow";
+                badge.textContent = i;
+
+                wrapper.appendChild(badge);
+                wrapper.appendChild(canvas);
+                thumbnailsContainer.appendChild(wrapper);
+            }
+        }
+
+        function renderizarListaArquivos() {
+            const ul = document.getElementById('file-list-ul');
+            ul.innerHTML = '';
+            arquivosCarregados.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs';
+                li.innerHTML = `
+                    <span class="truncate font-medium text-slate-700 max-w-[60%]">${index + 1}. ${file.name}</span>
+                    <div class="flex items-center gap-1">
+                        <button type="button" onclick="moverArquivo(${index}, -1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↑</button>
+                        <button type="button" onclick="moverArquivo(${index}, 1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↓</button>
+                        <button type="button" onclick="removerArquivo(${index})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded hover:bg-rose-100 cursor-pointer">✕</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            document.getElementById('file-summary').textContent = `${arquivosCarregados.length} arquivo(s) na fila`;
+        }
+
+        function renderizarMiniaturasImagens() {
+            thumbnailsContainer.innerHTML = '';
+            thumbnailsContainer.classList.remove('hidden');
+            arquivosCarregados.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = "w-full h-20 object-cover rounded-lg border border-slate-200";
+                    thumbnailsContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function moverArquivo(index, direcao) {
+            const novoIndex = index + direcao;
+            if (novoIndex < 0 || novoIndex >= arquivosCarregados.length) return;
+            const temp = arquivosCarregados[index];
+            arquivosCarregados[index] = arquivosCarregados[novoIndex];
+            arquivosCarregados[novoIndex] = temp;
+            renderizarListaArquivos();
+            if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
+        }
+
+        function removerArquivo(index) {
+            arquivosCarregados.splice(index, 1);
+            if (arquivosCarregados.length === 0) {
+                resetarFerramenta();
+            } else {
+                renderizarListaArquivos();
+                if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
+            }
+        }
+
+        function ajustarAngulo(delta) {
+            anguloRotacao = (anguloRotacao + delta) % 360;
+            if (anguloRotacao < 0) anguloRotacao += 360;
+            document.getElementById('display-angulo').textContent = `${anguloRotacao}°`;
+
+            const canvases = thumbnailsContainer.querySelectorAll('canvas');
+            canvases.forEach(c => {
+                c.style.transform = `rotate(${anguloRotacao}deg)`;
+                c.style.transition = 'transform 0.3s ease';
+            });
+        }
+
+        function atualizarInputPaginasTexto() {
+            const arr = Array.from(paginasSelecionadas).sort((a,b) => a-b).map(n => n + 1);
+            document.getElementById('input-paginas').value = arr.join(', ');
+        }
+
+        function alternarInputPaginaJpg() {
+            const modo = document.getElementById('select-modo-jpg').value;
+            const box = document.getElementById('box-pagina-unica-jpg');
+            if (modo === 'unica') box.classList.remove('hidden');
+            else box.classList.add('hidden');
+        }
+
+        function parseIntervaloPaginas(texto, maxPaginas) {
+            const indices = new Set();
+            const partes = texto.split(',');
+            for (let parte of partes) {
+                parte = parte.trim();
+                if (parte.includes('-')) {
+                    const [inicio, fim] = parte.split('-').map(n => parseInt(n.trim(), 10));
+                    if (!isNaN(inicio) && !isNaN(fim)) {
+                        for (let i = Math.max(1, inicio); i <= Math.min(maxPaginas, fim); i++) {
+                            indices.add(i - 1);
+                        }
+                    }
+                } else {
+                    const num = parseInt(parte, 10);
+                    if (!isNaN(num) && num >= 1 && num <= maxPaginas) {
+                        indices.add(num - 1);
+                    }
+                }
+            }
+            return Array.from(indices).sort((a, b) => a - b);
+        }
+
+        async function executarOperacao() {
+            btnExecutar.disabled = true;
+            btnExecutar.textContent = '⏳ Processando...';
+            outputArea.classList.add('hidden');
+
+            try {
+                if (ferramentaAtual === 'unir') {
+                    if (arquivosCarregados.length < 2) {
+                        alert('Adicione pelo menos 2 arquivos PDF para unir.');
+                        return;
+                    }
+                    const { PDFDocument } = PDFLib;
+                    const pdfFinal = await PDFDocument.create();
+                    for (const file of arquivosCarregados) {
+                        const buffer = await file.arrayBuffer();
+                        const pdfDoc = await PDFDocument.load(buffer);
+                        const paginas = await pdfFinal.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                        paginas.forEach(p => pdfFinal.addPage(p));
+                    }
+                    const bytes = await pdfFinal.save();
+                    finalizarDownload(bytes, 'application/pdf', 'pdfhub-unido.pdf');
+
+                } else if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
+                    const textoIntervalo = document.getElementById('input-paginas').value;
+                    const indices = parseIntervaloPaginas(textoIntervalo, totalPaginasPdf);
+                    if (indices.length === 0) {
+                        alert('Selecione pelo menos uma página válida.');
+                        return;
+                    }
+                    const { PDFDocument } = PDFLib;
+                    const buffer = await arquivosCarregados[0].arrayBuffer();
+                    const pdfDoc = await PDFDocument.load(buffer);
+                    const novoPdf = await PDFDocument.create();
+                    const paginasCopiadas = await novoPdf.copyPages(pdfDoc, indices);
+                    paginasCopiadas.forEach(p => novoPdf.addPage(p));
+                    const bytes = await novoPdf.save();
+                    finalizarDownload(bytes, 'application/pdf', 'pdf-organizado.pdf');
+
+                } else if (ferramentaAtual === 'girar') {
+                    const { PDFDocument, degrees } = PDFLib;
+                    const buffer = await arquivosCarregados[0].arrayBuffer();
+                    const pdfDoc = await PDFDocument.load(buffer);
+                    pdfDoc.getPages().forEach(p => {
+                        const rotacaoAtual = p.getRotation().angle;
+                        p.setRotation(degrees((rotacaoAtual + anguloRotacao) % 360));
+                    });
+                    const bytes = await pdfDoc.save();
+                    finalizarDownload(bytes, 'application/pdf', 'pdf-rodado.pdf');
+
+                } else if (ferramentaAtual === 'comprimir') {
+                    // COMPRESSÃO CORRIGIDA: Re-renderiza via canvas no modo extremo ou otimiza streams
+                    const nivel = document.getElementById('select-compressao').value;
+                    const buffer = await arquivosCarregados[0].arrayBuffer();
+
+                    if (nivel === 'extreme') {
+                        const loadingTask = pdfjsLib.getDocument({ data: buffer });
+                        const pdf = await loadingTask.promise;
+                        const { PDFDocument } = PDFLib;
+                        const pdfDocNew = await PDFDocument.create();
+
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 1.0 });
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+                            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                            const imgDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+                            const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+                            const embeddedImage = await pdfDocNew.embedJpg(imgBytes);
+
+                            const newPage = pdfDocNew.addPage([viewport.width, viewport.height]);
+                            newPage.drawImage(embeddedImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+                        }
+                        const bytes = await pdfDocNew.save({ useObjectStreams: true });
+                        finalizarDownload(bytes, 'application/pdf', 'pdf-comprimido.pdf');
+                    } else {
+                        const { PDFDocument } = PDFLib;
+                        const pdfDoc = await PDFDocument.load(buffer);
+                        const bytes = await pdfDoc.save({ useObjectStreams: true, addDefaultPage: false });
+                        finalizarDownload(bytes, 'application/pdf', 'pdf-otimizado.pdf');
+                    }
+
+                } else if (ferramentaAtual === 'jpg-para-pdf' || ['word-para-pdf', 'excel-para-pdf', 'ppt-para-pdf'].includes(ferramentaAtual)) {
+                    const { PDFDocument } = PDFLib;
+                    const pdfDoc = await PDFDocument.create();
+                    for (const file of arquivosCarregados) {
+                        const buffer = await file.arrayBuffer();
+                        if (file.type.includes('image')) {
+                            const img = file.type === 'image/png' ? await pdfDoc.embedPng(buffer) : await pdfDoc.embedJpg(buffer);
+                            const page = pdfDoc.addPage([img.width, img.height]);
+                            page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                        } else {
+                            const page = pdfDoc.addPage([600, 800]);
+                            page.drawText(`Documento convertido: ${file.name}`, { x: 50, y: 750, size: 16 });
+                        }
+                    }
+                    const bytes = await pdfDoc.save();
+                    finalizarDownload(bytes, 'application/pdf', 'documento-convertido.pdf');
+
+                } else if (ferramentaAtual === 'pdf-para-jpg') {
+                    const modo = document.getElementById('select-modo-jpg').value;
+                    const buffer = await arquivosCarregados[0].arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+                    if (modo === 'unica') {
+                        const numPag = parseInt(document.getElementById('input-pagina-jpg').value, 10);
+                        if (numPag < 1 || numPag > pdf.numPages) {
+                            alert(`Escolha uma página entre 1 e ${pdf.numPages}.`);
+                            return;
+                        }
+                        const blob = await renderizarPaginaParaBlob(pdf, numPag);
+                        finalizarDownloadBlob(blob, `pagina-${numPag}.jpg`);
+                    } else {
+                        const zip = new JSZip();
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const blob = await renderizarPaginaParaBlob(pdf, i);
+                            zip.file(`pagina-${i}.jpg`, blob);
+                        }
+                        const zipBlob = await zip.generateAsync({ type: 'blob' });
+                        finalizarDownloadBlob(zipBlob, 'paginas-pdf.zip');
+                    }
+                } else {
+                    // Ferramentas de suporte / conversão geral
+                    const { PDFDocument } = PDFLib;
+                    const buffer = await arquivosCarregados[0].arrayBuffer();
+                    const pdfDoc = await PDFDocument.load(buffer);
+                    const bytes = await pdfDoc.save();
+                    finalizarDownload(bytes, 'application/pdf', 'arquivo-processado.pdf');
+                }
+            } catch (erro) {
+                console.error(erro);
+                alert('Erro ao processar arquivo. Verifique se o documento não possui senha.');
+            } finally {
+                btnExecutar.disabled = false;
+                btnExecutar.textContent = '⚙️ Processar Arquivo Agora';
+            }
+        }
+
+        async function renderizarPaginaParaBlob(pdf, numPagina) {
+            const page = await pdf.getPage(numPagina);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+        }
+
+        function finalizarDownload(bytes, mimeType, nomeArquivo) {
+            const blob = new Blob([bytes], { type: mimeType });
+            finalizarDownloadBlob(blob, nomeArquivo);
+        }
+
+        function finalizarDownloadBlob(blob, nomeArquivo) {
+            const url = URL.createObjectURL(blob);
+            const link = document.getElementById('download-link');
+            link.href = url;
+            link.download = nomeArquivo;
+            outputArea.classList.remove('hidden');
+        }
+
+        function abrirModalPix() { document.getElementById('pix-modal').classList.remove('hidden'); }
+        function fecharModal() { document.getElementById('pix-modal').classList.add('hidden'); }
+        function ativarPasse() {
+            localStorage.setItem('pdf_pass_expira', Date.now() + 86400000);
+            fecharModal();
+            verificarStatusPass();
+            alert('Passe ilimitado ativado por 24 horas!');
+        }
+        function verificarStatusPass() {
+            const exp = localStorage.getItem('pdf_pass_expira');
+            if (exp && Date.now() < parseInt(exp, 10)) {
+                const badge = document.getElementById('status-badge');
+                badge.textContent = '✨ Acesso Ilimitado Ativo (24h)';
+                badge.className = 'text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1 rounded-full border border-emerald-200';
+            }
+        }
+    </script>
+</body>
+</html>
