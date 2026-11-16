@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDFHub - Ferramentas Interativas com Pré-visualização</title>
+    <title>PDFHub - Suíte Completa de Ferramentas PDF</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Bibliotecas Client-Side -->
@@ -11,7 +11,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
-        // Configuração do Worker do PDF.js para renderizar miniaturas
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <style>
@@ -38,53 +37,132 @@
         </div>
     </header>
 
-    <!-- Dashboard Inicial -->
+    <!-- Dashboard Inicial com Todas as Ferramentas -->
     <main id="home-view" class="max-w-7xl mx-auto px-6 py-10 w-full">
         <div class="text-center mb-12">
-            <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Ferramentas de PDF com Pré-visualização Real</h1>
-            <p class="text-slate-500 text-lg">Visualize páginas, gire em tempo real e selecione com precisão antes de baixar.</p>
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Todas as ferramentas que você precisa para seus PDFs</h1>
+            <p class="text-slate-500 text-lg">Gerencie, compacte, converta e edite seus documentos com total privacidade direto no navegador.</p>
         </div>
 
-        <!-- Categoria 1: Organizar -->
+        <!-- Categoria: Organizar PDF -->
         <div class="mb-10">
-            <h2 class="text-xl font-bold text-slate-800 mb-4">📂 Organizar e Modificar</h2>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📂 Organizar PDF</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('unir', 'Unir PDF', 'Adicione vários PDFs e organize a ordem exata com prévia.', '.pdf', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                <div onclick="selecionarFerramenta('unir', 'Juntar PDF', 'Mescle e junte PDFs em qualquer ordem desejada.', '.pdf', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
                     <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔗</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Unir PDF</h3>
-                    <p class="text-xs text-slate-500">Ordene e combine múltiplos arquivos.</p>
+                    <h3 class="font-bold text-slate-900 mb-1">Juntar PDF</h3>
+                    <p class="text-xs text-slate-500">Mescle e junte PDFs em qualquer ordem.</p>
                 </div>
-                <div onclick="selecionarFerramenta('dividir', 'Extrair / Dividir PDF', 'Selecione páginas visualmente clicando nas miniaturas.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                <div onclick="selecionarFerramenta('dividir', 'Dividir PDF', 'Selecione intervalos ou extraia páginas específicas.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
                     <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✂️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Extrair Páginas</h3>
-                    <p class="text-xs text-slate-500">Escolha páginas com prévia visual.</p>
+                    <h3 class="font-bold text-slate-900 mb-1">Dividir PDF</h3>
+                    <p class="text-xs text-slate-500">Selecione intervalos e separe páginas.</p>
                 </div>
-                <div onclick="selecionarFerramenta('girar', 'Girar PDF', 'Pré-visualize a rotação das páginas em tempo real.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                <div onclick="selecionarFerramenta('organizar', 'Organizar PDF', 'Ordene, exclua ou adicione páginas do documento.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📑</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Organizar PDF</h3>
+                    <p class="text-xs text-slate-500">Ordene, exclua ou adicione páginas.</p>
+                </div>
+                <div onclick="selecionarFerramenta('girar', 'Rodar PDF', 'Gire arquivos PDF de uma só vez.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
                     <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔄</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Girar PDF</h3>
-                    <p class="text-xs text-slate-500">Veja o giro antes de salvar.</p>
-                </div>
-                <div onclick="selecionarFerramenta('comprimir', 'Comprimir PDF', 'Reduza o tamanho mantendo a qualidade ideal.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🗜️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Comprimir PDF</h3>
-                    <p class="text-xs text-slate-500">Otimize e diminua o peso do arquivo.</p>
+                    <h3 class="font-bold text-slate-900 mb-1">Rodar PDF</h3>
+                    <p class="text-xs text-slate-500">Gire o PDF que quiser facilmente.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Categoria 2: Conversões -->
-        <div class="mb-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-4">🔄 Conversões</h2>
+        <!-- Categoria: Otimizar PDF -->
+        <div class="mb-10">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🗜️ Otimizar PDF</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('pdf-para-jpg', 'PDF para JPG', 'Visualize as páginas do PDF e exporte em imagem ou ZIP.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
+                <div onclick="selecionarFerramenta('comprimir', 'Comprimir PDF', 'Diminua o tamanho do arquivo mantendo a qualidade.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📉</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Comprimir PDF</h3>
+                    <p class="text-xs text-slate-500">Diminua o tamanho do seu arquivo PDF.</p>
+                </div>
+                <div onclick="selecionarFerramenta('reparar', 'Reparar PDF', 'Recupere dados de arquivos corrompidos.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🛠️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Reparar PDF</h3>
+                    <p class="text-xs text-slate-500">Repare um PDF danificado.</p>
+                </div>
+                <div onclick="selecionarFerramenta('pdf-a', 'PDF para PDF/A', 'Converta para o standard ISO de preservação.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🏛️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para PDF/A</h3>
+                    <p class="text-xs text-slate-500">Versão ISO para arquivo de longa duração.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categoria: Converter PDF -->
+        <div class="mb-10">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🔄 Converter PDF</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div onclick="selecionarFerramenta('pdf-para-word', 'PDF para Word', 'Converta PDF para documentos WORD DOCX.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📝</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para Word</h3>
+                    <p class="text-xs text-slate-500">Transforme PDF em arquivos DOCX editáveis.</p>
+                </div>
+                <div onclick="selecionarFerramenta('pdf-para-excel', 'PDF para Excel', 'Retire dados direto para planilhas do Excel.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📊</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para Excel</h3>
+                    <p class="text-xs text-slate-500">Extraia dados para planilhas XLSX.</p>
+                </div>
+                <div onclick="selecionarFerramenta('pdf-para-ppt', 'PDF para PowerPoint', 'Converta para apresentações PPTX.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📽️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para PowerPoint</h3>
+                    <p class="text-xs text-slate-500">Converta para apresentações PPTX.</p>
+                </div>
+                <div onclick="selecionarFerramenta('pdf-para-jpg', 'PDF para JPG', 'Extraia imagens ou converta páginas em JPG.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
                     <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🖼️</div>
                     <h3 class="font-bold text-slate-900 mb-1">PDF para JPG</h3>
-                    <p class="text-xs text-slate-500">Exporte páginas em alta qualidade.</p>
+                    <p class="text-xs text-slate-500">Exporte páginas em arquivos JPG ou ZIP.</p>
                 </div>
-                <div onclick="selecionarFerramenta('jpg-para-pdf', 'JPG para PDF', 'Organize suas fotos com prévia em grade antes de gerar.', 'image/*', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
+                <div onclick="selecionarFerramenta('word-para-pdf', 'Word para PDF', 'Converta documentos WORD para PDF.', '.docx, .doc', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📄</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Word para PDF</h3>
+                    <p class="text-xs text-slate-500">DOC/DOCX para PDF com máxima qualidade.</p>
+                </div>
+                <div onclick="selecionarFerramenta('excel-para-pdf', 'Excel para PDF', 'Converta tabelas EXCEL para PDF.', '.xlsx, .xls', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📈</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Excel para PDF</h3>
+                    <p class="text-xs text-slate-500">Planilhas ajustadas à largura da página.</p>
+                </div>
+                <div onclick="selecionarFerramenta('ppt-para-pdf', 'PowerPoint para PDF', 'Converta apresentações POWERPOINT para PDF.', '.pptx, .ppt', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📋</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PowerPoint para PDF</h3>
+                    <p class="text-xs text-slate-500">PPT/PPTX para PDF com alta fidelidade.</p>
+                </div>
+                <div onclick="selecionarFerramenta('jpg-para-pdf', 'JPG para PDF', 'Converta imagens JPG/PNG para PDF.', 'image/*', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
                     <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📷</div>
                     <h3 class="font-bold text-slate-900 mb-1">JPG para PDF</h3>
-                    <p class="text-xs text-slate-500">Converta imagens com pré-visualização.</p>
+                    <p class="text-xs text-slate-500">Transforme imagens em documento PDF.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categoria: Segurança de PDF -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🔒 Segurança de PDF</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div onclick="selecionarFerramenta('proteger', 'Proteger PDF', 'Proteja arquivos PDF com uma senha forte.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔐</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Proteger PDF</h3>
+                    <p class="text-xs text-slate-500">Encripte documentos com senha.</p>
+                </div>
+                <div onclick="selecionarFerramenta('desbloquear', 'Desbloquear PDF', 'Remova senhas e restrições de segurança.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔓</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Desbloquear PDF</h3>
+                    <p class="text-xs text-slate-500">Remova senhas e restrições autorizadas.</p>
+                </div>
+                <div onclick="selecionarFerramenta('assinar', 'Assinar PDF', 'Insira assinaturas eletrônicas.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✍️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Assinar PDF</h3>
+                    <p class="text-xs text-slate-500">Assine você mesmo ou solicite assinaturas.</p>
+                </div>
+                <div onclick="selecionarFerramenta('marca-dagua', 'Marca d\'água', 'Insira imagem ou texto sobre o PDF.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">💧</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Marca d'água</h3>
+                    <p class="text-xs text-slate-500">Adicione texto ou imagem transparente.</p>
                 </div>
             </div>
         </div>
@@ -98,7 +176,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            <!-- Coluna Esquerda: Upload e Gerenciamento (Largura 5) -->
+            <!-- Coluna Esquerda: Upload e Gerenciamento -->
             <div class="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
                 <h2 id="tool-title" class="text-xl font-bold mb-1">Ferramenta</h2>
                 <p id="tool-desc" class="text-slate-500 text-xs mb-6">Instruções da ferramenta.</p>
@@ -118,7 +196,7 @@
                         <button onclick="resetarFerramenta()" class="text-rose-600 hover:underline font-medium ml-2 cursor-pointer">Trocar arquivo</button>
                     </div>
 
-                    <!-- Lista para reordenar múltiplos arquivos (Unir / JPG para PDF) -->
+                    <!-- Lista para reordenar múltiplos arquivos -->
                     <div id="ctrl-lista-arquivos" class="hidden">
                         <div class="flex justify-between items-center mb-2">
                             <label class="text-xs font-bold text-slate-700 uppercase">Ordem dos Arquivos:</label>
@@ -132,7 +210,7 @@
                 </div>
             </div>
 
-            <!-- Coluna Direita: Painel de Pré-visualização e Ações (Largura 7) -->
+            <!-- Coluna Direita: Painel de Pré-visualização e Ações -->
             <div id="right-action-panel" class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 opacity-60 pointer-events-none transition-all">
                 <h3 class="text-base font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
                     <span class="flex items-center gap-2">👁️ Pré-visualização e Ajustes</span>
@@ -142,7 +220,7 @@
                 <div id="config-panel-content">
                     <p id="placeholder-msg" class="text-xs text-slate-400 mb-4 py-8 text-center">Carregue um arquivo à esquerda para visualizar e ajustar.</p>
                     
-                    <!-- Container Gráfico de Miniaturas (Pré-visualização visual) -->
+                    <!-- Container Gráfico de Miniaturas -->
                     <div id="thumbnails-container" class="hidden grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-72 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200 mb-4"></div>
 
                     <!-- Controles: Dividir / Extrair -->
@@ -152,7 +230,7 @@
                         <p class="text-xs text-slate-500 mt-1">Dica: Clique nas miniaturas acima para selecionar/deselecionar páginas.</p>
                     </div>
 
-                    <!-- Controles: Girar -->
+                    <!-- Controles: Girar / Rodar -->
                     <div id="ctrl-girar" class="hidden mb-4 text-center">
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Aplicar rotação visual:</label>
                         <div class="flex justify-center gap-2 mb-3">
@@ -165,14 +243,15 @@
                         </div>
                     </div>
 
-                    <!-- Controles: Comprimir -->
+                    <!-- Controles: Comprimir (CORRIGIDO) -->
                     <div id="ctrl-comprimir" class="hidden mb-4 text-left">
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Nível de Compressão:</label>
                         <select id="select-compressao" class="w-full p-3 rounded-xl border border-slate-300 text-sm bg-white">
-                            <option value="low">Leve (Alta qualidade)</option>
-                            <option value="medium" selected>Recomendado (Equilíbrio ideal)</option>
-                            <option value="extreme">Extrema (Menor tamanho possível)</option>
+                            <option value="low">Compressão Leve (Mantém alta qualidade)</option>
+                            <option value="medium" selected>Compressão Recomendada (Equilíbrio ideal)</option>
+                            <option value="extreme">Compressão Extrema (Re-renderiza imagens e reduz drasticamente o peso)</option>
                         </select>
+                        <p class="text-xs text-slate-500 mt-2">Nota: O modo Extrema reconstrói o arquivo rasterizando as páginas para diminuir o tamanho real.</p>
                     </div>
 
                     <!-- Controles: PDF para JPG -->
@@ -190,478 +269,4 @@
                 </div>
 
                 <!-- Botão Executar -->
-                <button id="btn-executar" onclick="executarOperacao()" disabled class="w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed">
-                    ⚙️ Processar Arquivo Agora
-                </button>
-
-                <!-- Resultado / Download -->
-                <div id="output-area" class="mt-4 hidden pt-4 border-t border-slate-100 text-center">
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium mb-3">
-                        ✨ Concluído com sucesso!
-                    </div>
-                    <a id="download-link" class="inline-block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-sm text-sm">
-                        ⬇️ Baixar Resultado
-                    </a>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Modal Pix -->
-    <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl text-center">
-            <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">Pix</div>
-            <h3 class="text-2xl font-bold text-slate-900 mb-1">Passe Ilimitado (24h)</h3>
-            <p class="text-sm text-slate-500 mb-6">Remova todos os limites por apenas **R$ 4,90**.</p>
-            
-            <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200 mb-6">
-                <p class="text-xs text-slate-500 mb-2 font-medium">Chave Pix Copia e Cola:</p>
-                <input type="text" readonly value="00020126580014br.gov.bcb.pix0136sua-chave-pix-aqui52040000530398654044.90..." class="text-xs text-slate-600 font-mono bg-white p-2.5 rounded-xl border border-slate-200 w-full mb-3 text-center"/>
-                <button onclick="alert('Código Pix copiado!')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded-xl transition cursor-pointer">
-                    Copiar Código Pix
-                </button>
-            </div>
-
-            <button onclick="ativarPasse()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition mb-3 cursor-pointer">
-                Já fiz o pagamento
-            </button>
-            <button onclick="fecharModal()" class="w-full text-xs text-slate-500 hover:text-slate-800 py-2 cursor-pointer">
-                Voltar
-            </button>
-        </div>
-    </div>
-
-    <!-- Rodapé -->
-    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 bg-white">
-        &copy; 2026 PDFHub. Processamento privado e local.
-    </footer>
-
-    <!-- Lógica JavaScript com Pré-visualização -->
-    <script>
-        let ferramentaAtual = '';
-        let arquivosCarregados = [];
-        let pdfJsDocGlobal = null;
-        let totalPaginasPdf = 0;
-        let anguloRotacao = 90;
-        let paginasSelecionadas = new Set();
-
-        const homeView = document.getElementById('home-view');
-        const toolView = document.getElementById('tool-view');
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const addMoreInput = document.getElementById('add-more-input');
-        const fileLoadedContainer = document.getElementById('file-loaded-container');
-        const rightActionPanel = document.getElementById('right-action-panel');
-        const btnExecutar = document.getElementById('btn-executar');
-        const outputArea = document.getElementById('output-area');
-        const thumbnailsContainer = document.getElementById('thumbnails-container');
-
-        verificarStatusPass();
-
-        function selecionarFerramenta(id, titulo, descricao, acceptType, allowMultiple) {
-            ferramentaAtual = id;
-            homeView.classList.add('hidden');
-            toolView.classList.remove('hidden');
-            document.getElementById('tool-title').textContent = titulo;
-            document.getElementById('tool-desc').textContent = descricao;
-            
-            fileInput.accept = acceptType;
-            fileInput.multiple = allowMultiple;
-            addMoreInput.accept = acceptType;
-            addMoreInput.multiple = true;
-            document.getElementById('upload-label-text').textContent = allowMultiple ? 'Clique para selecionar os arquivos' : 'Clique para selecionar o arquivo';
-            
-            resetarFerramenta();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function voltarHome() {
-            toolView.classList.add('hidden');
-            homeView.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function resetarFerramenta() {
-            arquivosCarregados = [];
-            pdfJsDocGlobal = null;
-            totalPaginasPdf = 0;
-            anguloRotacao = 90;
-            paginasSelecionadas.clear();
-            document.getElementById('display-angulo').textContent = '90°';
-            fileInput.value = '';
-            
-            dropZone.classList.remove('hidden');
-            fileLoadedContainer.classList.add('hidden');
-            outputArea.classList.add('hidden');
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.add('hidden');
-
-            rightActionPanel.classList.add('opacity-60', 'pointer-events-none');
-            btnExecutar.disabled = true;
-            btnExecutar.className = "w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed";
-            document.getElementById('placeholder-msg').style.display = 'block';
-
-            ['ctrl-dividir', 'ctrl-girar', 'ctrl-comprimir', 'ctrl-pdf-jpg', 'ctrl-lista-arquivos'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById('preview-counter').textContent = '';
-        }
-
-        fileInput.addEventListener('change', async function(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-
-            arquivosCarregados = files;
-            dropZone.classList.add('hidden');
-            fileLoadedContainer.classList.remove('hidden');
-            outputArea.classList.add('hidden');
-
-            rightActionPanel.classList.remove('opacity-60', 'pointer-events-none');
-            btnExecutar.disabled = false;
-            btnExecutar.className = "w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition shadow-sm cursor-pointer";
-            document.getElementById('placeholder-msg').style.display = 'none';
-
-            await prepararPainelConfiguracao();
-        });
-
-        addMoreInput.addEventListener('change', function(e) {
-            const novos = Array.from(e.target.files);
-            arquivosCarregados = arquivosCarregados.concat(novos);
-            renderizarListaArquivos();
-            addMoreInput.value = '';
-        });
-
-        async function prepararPainelConfiguracao() {
-            const fileSummary = document.getElementById('file-summary');
-
-            if (ferramentaAtual === 'unir' || ferramentaAtual === 'jpg-para-pdf') {
-                fileSummary.textContent = `${arquivosCarregados.length} arquivo(s)`;
-                document.getElementById('ctrl-lista-arquivos').classList.remove('hidden');
-                renderizarListaArquivos();
-
-                // Pré-visualização em grade para imagens ou lista
-                if (ferramentaAtual === 'jpg-para-pdf') {
-                    renderizarMiniaturasImagens();
-                }
-            } else {
-                const file = arquivosCarregados[0];
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                fileSummary.textContent = `${file.name} (${sizeMB} MB)`;
-
-                if (file.type === 'application/pdf') {
-                    const buffer = await file.arrayBuffer();
-                    pdfJsDocGlobal = await pdfjsLib.getDocument({ data: buffer }).promise;
-                    totalPaginasPdf = pdfJsDocGlobal.numPages;
-
-                    document.getElementById('preview-counter').textContent = `${totalPaginasPdf} página(s)`;
-                    await gerarMiniaturasPdfVisual();
-                }
-
-                if (ferramentaAtual === 'dividir') {
-                    document.getElementById('ctrl-dividir').classList.remove('hidden');
-                    for(let i=0; i<totalPaginasPdf; i++) paginasSelecionadas.add(i);
-                    atualizarInputPaginasTexto();
-                } else if (ferramentaAtual === 'girar') {
-                    document.getElementById('ctrl-girar').classList.remove('hidden');
-                } else if (ferramentaAtual === 'comprimir') {
-                    document.getElementById('ctrl-comprimir').classList.remove('hidden');
-                } else if (ferramentaAtual === 'pdf-para-jpg') {
-                    document.getElementById('ctrl-pdf-jpg').classList.remove('hidden');
-                    document.getElementById('input-pagina-jpg').max = totalPaginasPdf;
-                }
-            }
-        }
-
-        // Renderiza miniaturas das páginas do PDF na prévia
-        async function gerarMiniaturasPdfVisual() {
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.remove('hidden');
-
-            for (let i = 1; i <= totalPaginasPdf; i++) {
-                const page = await pdfJsDocGlobal.getPage(i);
-                const viewport = page.getViewport({ scale: 0.3 }); // Miniatura leve
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                canvas.className = "rounded shadow-xs transition-transform duration-200";
-
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = "page-thumb relative border-2 border-slate-200 rounded-xl p-1 bg-white cursor-pointer flex flex-col items-center group";
-                if (ferramentaAtual === 'dividir' && paginasSelecionadas.has(i - 1)) {
-                    wrapper.classList.add('selected');
-                }
-                
-                wrapper.onclick = () => {
-                    if (ferramentaAtual === 'dividir') {
-                        if (paginasSelecionadas.has(i - 1)) {
-                            paginasSelecionadas.delete(i - 1);
-                            wrapper.classList.remove('selected');
-                        } else {
-                            paginasSelecionadas.add(i - 1);
-                            wrapper.classList.add('selected');
-                        }
-                        atualizarInputPaginasTexto();
-                    }
-                };
-
-                const badge = document.createElement('span');
-                badge.className = "page-badge absolute top-2 right-2 bg-slate-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10 shadow";
-                badge.textContent = i;
-
-                wrapper.appendChild(badge);
-                wrapper.appendChild(canvas);
-                thumbnailsContainer.appendChild(wrapper);
-            }
-        }
-
-        function renderizarListaArquivos() {
-            const ul = document.getElementById('file-list-ul');
-            ul.innerHTML = '';
-            arquivosCarregados.forEach((file, index) => {
-                const li = document.createElement('li');
-                li.className = 'flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs';
-                li.innerHTML = `
-                    <span class="truncate font-medium text-slate-700 max-w-[60%]">${index + 1}. ${file.name}</span>
-                    <div class="flex items-center gap-1">
-                        <button type="button" onclick="moverArquivo(${index}, -1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↑</button>
-                        <button type="button" onclick="moverArquivo(${index}, 1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↓</button>
-                        <button type="button" onclick="removerArquivo(${index})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded hover:bg-rose-100 cursor-pointer">✕</button>
-                    </div>
-                `;
-                ul.appendChild(li);
-            });
-            document.getElementById('file-summary').textContent = `${arquivosCarregados.length} arquivo(s) na fila`;
-        }
-
-        function renderizarMiniaturasImagens() {
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.remove('hidden');
-            arquivosCarregados.forEach((file, idx) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = "w-full h-20 object-cover rounded-lg border border-slate-200";
-                    thumbnailsContainer.appendChild(img);
-                }
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function moverArquivo(index, direcao) {
-            const novoIndex = index + direcao;
-            if (novoIndex < 0 || novoIndex >= arquivosCarregados.length) return;
-            const temp = arquivosCarregados[index];
-            arquivosCarregados[index] = arquivosCarregados[novoIndex];
-            arquivosCarregados[novoIndex] = temp;
-            renderizarListaArquivos();
-            if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
-        }
-
-        function removerArquivo(index) {
-            arquivosCarregados.splice(index, 1);
-            if (arquivosCarregados.length === 0) {
-                resetarFerramenta();
-            } else {
-                renderizarListaArquivos();
-                if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
-            }
-        }
-
-        // Pré-visualização da rotação em tempo real nas miniaturas
-        function ajustarAngulo(delta) {
-            anguloRotacao = (anguloRotacao + delta) % 360;
-            if (anguloRotacao < 0) anguloRotacao += 360;
-            document.getElementById('display-angulo').textContent = `${anguloRotacao}°`;
-
-            // Aplica rotação visual instantânea em todas as miniaturas renderizadas
-            const canvases = thumbnailsContainer.querySelectorAll('canvas');
-            canvases.forEach(c => {
-                c.style.transform = `rotate(${anguloRotacao}deg)`;
-                c.style.transition = 'transform 0.3s ease';
-            });
-        }
-
-        function atualizarInputPaginasTexto() {
-            const arr = Array.from(paginasSelecionadas).sort((a,b) => a-b).map(n => n + 1);
-            document.getElementById('input-paginas').value = arr.join(', ');
-        }
-
-        function alternarInputPaginaJpg() {
-            const modo = document.getElementById('select-modo-jpg').value;
-            const box = document.getElementById('box-pagina-unica-jpg');
-            if (modo === 'unica') box.classList.remove('hidden');
-            else box.classList.add('hidden');
-        }
-
-        function parseIntervaloPaginas(texto, maxPaginas) {
-            const indices = new Set();
-            const partes = texto.split(',');
-            for (let parte of partes) {
-                parte = parte.trim();
-                if (parte.includes('-')) {
-                    const [inicio, fim] = parte.split('-').map(n => parseInt(n.trim(), 10));
-                    if (!isNaN(inicio) && !isNaN(fim)) {
-                        for (let i = Math.max(1, inicio); i <= Math.min(maxPaginas, fim); i++) {
-                            indices.add(i - 1);
-                        }
-                    }
-                } else {
-                    const num = parseInt(parte, 10);
-                    if (!isNaN(num) && num >= 1 && num <= maxPaginas) {
-                        indices.add(num - 1);
-                    }
-                }
-            }
-            return Array.from(indices).sort((a, b) => a - b);
-        }
-
-        async function executarOperacao() {
-            btnExecutar.disabled = true;
-            btnExecutar.textContent = '⏳ Processando...';
-            outputArea.classList.add('hidden');
-
-            try {
-                if (ferramentaAtual === 'unir') {
-                    if (arquivosCarregados.length < 2) {
-                        alert('Adicione pelo menos 2 arquivos PDF para unir.');
-                        return;
-                    }
-                    const { PDFDocument } = PDFLib;
-                    const pdfFinal = await PDFDocument.create();
-                    for (const file of arquivosCarregados) {
-                        const buffer = await file.arrayBuffer();
-                        const pdfDoc = await PDFDocument.load(buffer);
-                        const paginas = await pdfFinal.copyPages(pdfDoc, pdfDoc.getPageIndices());
-                        paginas.forEach(p => pdfFinal.addPage(p));
-                    }
-                    const bytes = await pdfFinal.save();
-                    finalizarDownload(bytes, 'application/pdf', 'pdfhub-unido.pdf');
-
-                } else if (ferramentaAtual === 'dividir') {
-                    const textoIntervalo = document.getElementById('input-paginas').value;
-                    const indices = parseIntervaloPaginas(textoIntervalo, totalPaginasPdf);
-                    if (indices.length === 0) {
-                        alert('Selecione pelo menos uma página válida.');
-                        return;
-                    }
-                    const { PDFDocument } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    const novoPdf = await PDFDocument.create();
-                    const paginasCopiadas = await novoPdf.copyPages(pdfDoc, indices);
-                    paginasCopiadas.forEach(p => novoPdf.addPage(p));
-                    const bytes = await novoPdf.save();
-                    finalizarDownload(bytes, 'application/pdf', 'paginas-extraidas.pdf');
-
-                } else if (ferramentaAtual === 'girar') {
-                    const { PDFDocument, degrees } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    pdfDoc.getPages().forEach(p => {
-                        const rotacaoAtual = p.getRotation().angle;
-                        p.setRotation(degrees((rotacaoAtual + anguloRotacao) % 360));
-                    });
-                    const bytes = await pdfDoc.save();
-                    finalizarDownload(bytes, 'application/pdf', 'pdf-girado.pdf');
-
-                } else if (ferramentaAtual === 'comprimir') {
-                    const { PDFDocument } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    const bytes = await pdfDoc.save({ useObjectStreams: true });
-                    finalizarDownload(bytes, 'application/pdf', 'pdf-otimizado.pdf');
-
-                } else if (ferramentaAtual === 'jpg-para-pdf') {
-                    const { PDFDocument } = PDFLib;
-                    const pdfDoc = await PDFDocument.create();
-                    for (const file of arquivosCarregados) {
-                        const buffer = await file.arrayBuffer();
-                        const img = file.type === 'image/png' 
-                            ? await pdfDoc.embedPng(buffer) 
-                            : await pdfDoc.embedJpg(buffer);
-                        const page = pdfDoc.addPage([img.width, img.height]);
-                        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-                    }
-                    const bytes = await pdfDoc.save();
-                    finalizarDownload(bytes, 'application/pdf', 'imagens-unidas.pdf');
-
-                } else if (ferramentaAtual === 'pdf-para-jpg') {
-                    const modo = document.getElementById('select-modo-jpg').value;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
-                    if (modo === 'unica') {
-                        const numPag = parseInt(document.getElementById('input-pagina-jpg').value, 10);
-                        if (numPag < 1 || numPag > pdf.numPages) {
-                            alert(`Escolha uma página entre 1 e ${pdf.numPages}.`);
-                            return;
-                        }
-                        const blob = await renderizarPaginaParaBlob(pdf, numPag);
-                        finalizarDownloadBlob(blob, `pagina-${numPag}.jpg`);
-                    } else {
-                        const zip = new JSZip();
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const blob = await renderizarPaginaParaBlob(pdf, i);
-                            zip.file(`pagina-${i}.jpg`, blob);
-                        }
-                        const zipBlob = await zip.generateAsync({ type: 'blob' });
-                        finalizarDownloadBlob(zipBlob, 'paginas-pdf.zip');
-                    }
-                }
-            } catch (erro) {
-                console.error(erro);
-                alert('Erro ao processar arquivo.');
-            } finally {
-                btnExecutar.disabled = false;
-                btnExecutar.textContent = '⚙️ Processar Arquivo Agora';
-            }
-        }
-
-        async function renderizarPaginaParaBlob(pdf, numPagina) {
-            const page = await pdf.getPage(numPagina);
-            const viewport = page.getViewport({ scale: 1.5 });
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-        }
-
-        function finalizarDownload(bytes, mimeType, nomeArquivo) {
-            const blob = new Blob([bytes], { type: mimeType });
-            finalizarDownloadBlob(blob, nomeArquivo);
-        }
-
-        function finalizarDownloadBlob(blob, nomeArquivo) {
-            const url = URL.createObjectURL(blob);
-            const link = document.getElementById('download-link');
-            link.href = url;
-            link.download = nomeArquivo;
-            outputArea.classList.remove('hidden');
-        }
-
-        function abrirModalPix() { document.getElementById('pix-modal').classList.remove('hidden'); }
-        function fecharModal() { document.getElementById('pix-modal').classList.add('hidden'); }
-        function ativarPasse() {
-            localStorage.setItem('pdf_pass_expira', Date.now() + 86400000);
-            fecharModal();
-            verificarStatusPass();
-            alert('Passe ilimitado ativado por 24 horas!');
-        }
-        function verificarStatusPass() {
-            const exp = localStorage.getItem('pdf_pass_expira');
-            if (exp && Date.now() < parseInt(exp, 10)) {
-                const badge = document.getElementById('status-badge');
-                badge.textContent = '✨ Acesso Ilimitado Ativo (24h)';
-                badge.className = 'text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1 rounded-full border border-emerald-200';
-            }
-        }
-    </script>
-</body>
-</html>
+                <button id="btn-executar" onclick="executarOperacao()" disabled class="w-full mt-
