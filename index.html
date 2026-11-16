@@ -1,811 +1,278 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDFHub - Suíte Completa de Ferramentas PDF</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Bibliotecas Client-Side -->
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    <style>
-        .page-thumb.selected { border-color: #e11d48; background-color: #fff1f2; }
-        .page-thumb.selected .page-badge { background-color: #e11d48; color: white; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDFHub - Ferramentas PDF Online e Gratuitas</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Bibliotecas PDF & Office Client-Side -->
+  <!-- @cantoo/pdf-lib suporta encriptação com senha no navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <!-- PDF.js para leitura e renderização -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- SheetJS para Excel (.xlsx) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <!-- docx.js para Word (.docx) real -->
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <!-- PptxGenJS para PowerPoint (.pptx) real -->
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <!-- JSZip para empacotar múltiplas imagens -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Mammoth.js para ler DOCX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- html2pdf.js para converter HTML de Office em PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .tool-card { transition: all 0.2s ease; }
+    .tool-card:hover { transform: translateY(-3px); }
+    #signature-pad { touch-action: none; cursor: crosshair; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Cabeçalho -->
-    <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-40 shadow-xs">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="voltarHome()">
-                <span class="text-2xl font-black text-rose-600">🔴 PDFHub</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <span id="status-badge" class="text-xs bg-slate-100 text-slate-600 font-medium px-3 py-1 rounded-full border border-slate-200">
-                    Plano Gratuito
-                </span>
-                <button onclick="abrirModalPix()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-full transition cursor-pointer shadow-xs">
-                    ✨ Remover Limites (R$ 4,90)
-                </button>
-            </div>
-        </div>
-    </header>
+  <!-- Cabeçalho -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="fecharModalFerramenta()">
+        <span class="bg-blue-600 text-white font-bold px-2.5 py-1 rounded-lg text-lg">PDF</span>
+        <span class="font-bold text-xl tracking-tight text-slate-900">Hub</span>
+      </div>
 
-    <!-- Dashboard Inicial com Todas as Ferramentas -->
-    <main id="home-view" class="max-w-7xl mx-auto px-6 py-10 w-full">
-        <div class="text-center mb-12">
-            <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Todas as ferramentas que você precisa para seus PDFs</h1>
-            <p class="text-slate-500 text-lg">Gerencie, compacte, converta e edite seus documentos com total privacidade direto no navegador.</p>
-        </div>
-
-        <!-- Categoria: Organizar PDF -->
-        <div class="mb-10">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📂 Organizar PDF</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('unir', 'Juntar PDF', 'Mescle e junte PDFs em qualquer ordem desejada.', '.pdf', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔗</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Juntar PDF</h3>
-                    <p class="text-xs text-slate-500">Mescle e junte PDFs em qualquer ordem.</p>
-                </div>
-                <div onclick="selecionarFerramenta('dividir', 'Dividir PDF', 'Selecione intervalos ou extraia páginas específicas.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✂️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Dividir PDF</h3>
-                    <p class="text-xs text-slate-500">Selecione intervalos e separe páginas.</p>
-                </div>
-                <div onclick="selecionarFerramenta('organizar', 'Organizar PDF', 'Ordene, exclua ou adicione páginas do documento.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📑</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Organizar PDF</h3>
-                    <p class="text-xs text-slate-500">Ordene, exclua ou adicione páginas.</p>
-                </div>
-                <div onclick="selecionarFerramenta('girar', 'Rodar PDF', 'Gire arquivos PDF de uma só vez.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔄</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Rodar PDF</h3>
-                    <p class="text-xs text-slate-500">Gire o PDF que quiser facilmente.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Categoria: Otimizar PDF -->
-        <div class="mb-10">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🗜️ Otimizar PDF</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('comprimir', 'Comprimir PDF', 'Diminua o tamanho do arquivo mantendo a qualidade.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📉</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Comprimir PDF</h3>
-                    <p class="text-xs text-slate-500">Diminua o tamanho do seu arquivo PDF.</p>
-                </div>
-                <div onclick="selecionarFerramenta('reparar', 'Reparar PDF', 'Recupere dados de arquivos corrompidos.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🛠️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Reparar PDF</h3>
-                    <p class="text-xs text-slate-500">Repare um PDF danificado.</p>
-                </div>
-                <div onclick="selecionarFerramenta('pdf-a', 'PDF para PDF/A', 'Converta para o standard ISO de preservação.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🏛️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PDF para PDF/A</h3>
-                    <p class="text-xs text-slate-500">Versão ISO para arquivo de longa duração.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Categoria: Converter PDF -->
-        <div class="mb-10">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🔄 Converter PDF</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('pdf-para-word', 'PDF para Word', 'Converta PDF para documentos WORD DOCX.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📝</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PDF para Word</h3>
-                    <p class="text-xs text-slate-500">Transforme PDF em arquivos DOCX editáveis.</p>
-                </div>
-                <div onclick="selecionarFerramenta('pdf-para-excel', 'PDF para Excel', 'Retire dados direto para planilhas do Excel.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📊</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PDF para Excel</h3>
-                    <p class="text-xs text-slate-500">Extraia dados para planilhas XLSX.</p>
-                </div>
-                <div onclick="selecionarFerramenta('pdf-para-ppt', 'PDF para PowerPoint', 'Converta para apresentações PPTX.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📽️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PDF para PowerPoint</h3>
-                    <p class="text-xs text-slate-500">Converta para apresentações PPTX.</p>
-                </div>
-                <div onclick="selecionarFerramenta('pdf-para-jpg', 'PDF para JPG', 'Extraia imagens ou converta páginas em JPG.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🖼️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PDF para JPG</h3>
-                    <p class="text-xs text-slate-500">Exporte páginas em arquivos JPG ou ZIP.</p>
-                </div>
-                <div onclick="selecionarFerramenta('word-para-pdf', 'Word para PDF', 'Converta documentos WORD para PDF.', '.docx, .doc', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📄</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Word para PDF</h3>
-                    <p class="text-xs text-slate-500">DOC/DOCX para PDF com máxima qualidade.</p>
-                </div>
-                <div onclick="selecionarFerramenta('excel-para-pdf', 'Excel para PDF', 'Converta tabelas EXCEL para PDF.', '.xlsx, .xls', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📈</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Excel para PDF</h3>
-                    <p class="text-xs text-slate-500">Planilhas ajustadas à largura da página.</p>
-                </div>
-                <div onclick="selecionarFerramenta('ppt-para-pdf', 'PowerPoint para PDF', 'Converta apresentações POWERPOINT para PDF.', '.pptx, .ppt', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📋</div>
-                    <h3 class="font-bold text-slate-900 mb-1">PowerPoint para PDF</h3>
-                    <p class="text-xs text-slate-500">PPT/PPTX para PDF com alta fidelidade.</p>
-                </div>
-                <div onclick="selecionarFerramenta('jpg-para-pdf', 'JPG para PDF', 'Converta imagens JPG/PNG para PDF.', 'image/*', true)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📷</div>
-                    <h3 class="font-bold text-slate-900 mb-1">JPG para PDF</h3>
-                    <p class="text-xs text-slate-500">Transforme imagens em documento PDF.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Categoria: Segurança de PDF -->
-        <div class="mb-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🔒 Segurança de PDF</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="selecionarFerramenta('proteger', 'Proteger PDF', 'Proteja arquivos PDF com uma senha forte.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔐</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Proteger PDF</h3>
-                    <p class="text-xs text-slate-500">Encripte documentos com senha.</p>
-                </div>
-                <div onclick="selecionarFerramenta('desbloquear', 'Desbloquear PDF', 'Remova senhas e restrições de segurança.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔓</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Desbloquear PDF</h3>
-                    <p class="text-xs text-slate-500">Remova senhas e restrições autorizadas.</p>
-                </div>
-                <div onclick="selecionarFerramenta('assinar', 'Assinar PDF', 'Insira assinaturas eletrônicas.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✍️</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Assinar PDF</h3>
-                    <p class="text-xs text-slate-500">Assine você mesmo ou solicite assinaturas.</p>
-                </div>
-                <div onclick="selecionarFerramenta('marca-dagua', 'Marca d\'água', 'Insira imagem ou texto sobre o PDF.', '.pdf', false)" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">💧</div>
-                    <h3 class="font-bold text-slate-900 mb-1">Marca d'água</h3>
-                    <p class="text-xs text-slate-500">Adicione texto ou imagem transparente.</p>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Área de Trabalho com Layout de 2 Colunas -->
-    <div id="tool-view" class="max-w-7xl mx-auto px-6 py-10 w-full hidden my-auto">
-        <button onclick="voltarHome()" class="text-sm font-medium text-slate-500 hover:text-rose-600 mb-6 flex items-center gap-1 cursor-pointer">
-            ← Voltar para todas as ferramentas
+      <div class="flex items-center gap-3">
+        <span class="hidden md:inline-block text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+          🔒 100% no seu navegador • Privacidade total
+        </span>
+        <button onclick="abrirModalPix()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-1.5">
+          <span>❤️</span>
+          <span>Ajude nosso SITE</span>
         </button>
+      </div>
+    </div>
+  </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            <!-- Coluna Esquerda: Upload e Gerenciamento -->
-            <div class="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
-                <h2 id="tool-title" class="text-xl font-bold mb-1">Ferramenta</h2>
-                <p id="tool-desc" class="text-slate-500 text-xs mb-6">Instruções da ferramenta.</p>
-
-                <!-- Etapa 1: Upload -->
-                <label id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-rose-500 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition">
-                    <svg class="w-10 h-10 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <span id="upload-label-text" class="text-sm font-medium text-slate-700">Clique para selecionar o arquivo</span>
-                    <span class="text-xs text-slate-400 mt-1">Processamento 100% local e privado</span>
-                    <input type="file" id="file-input" class="hidden">
-                </label>
-
-                <!-- Container pós-upload -->
-                <div id="file-loaded-container" class="hidden">
-                    <div id="file-info-box" class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4 flex justify-between items-center text-xs">
-                        <span id="file-summary" class="font-medium text-slate-700 truncate">arquivo.pdf</span>
-                        <button onclick="resetarFerramenta()" class="text-rose-600 hover:underline font-medium ml-2 cursor-pointer">Trocar arquivo</button>
-                    </div>
-
-                    <!-- Lista para reordenar múltiplos arquivos -->
-                    <div id="ctrl-lista-arquivos" class="hidden">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="text-xs font-bold text-slate-700 uppercase">Ordem dos Arquivos:</label>
-                            <label class="text-xs text-rose-600 font-medium cursor-pointer hover:underline">
-                                + Adicionar mais
-                                <input type="file" id="add-more-input" class="hidden">
-                            </label>
-                        </div>
-                        <ul id="file-list-ul" class="space-y-2 max-h-60 overflow-y-auto"></ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coluna Direita: Painel de Pré-visualização e Ações -->
-            <div id="right-action-panel" class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 opacity-60 pointer-events-none transition-all">
-                <h3 class="text-base font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
-                    <span class="flex items-center gap-2">👁️ Pré-visualização e Ajustes</span>
-                    <span id="preview-counter" class="text-xs font-normal text-slate-500"></span>
-                </h3>
-
-                <div id="config-panel-content">
-                    <p id="placeholder-msg" class="text-xs text-slate-400 mb-4 py-8 text-center">Carregue um arquivo à esquerda para visualizar e ajustar.</p>
-                    
-                    <!-- Container Gráfico de Miniaturas -->
-                    <div id="thumbnails-container" class="hidden grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-72 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200 mb-4"></div>
-
-                    <!-- Controles: Dividir / Extrair -->
-                    <div id="ctrl-dividir" class="hidden mb-4 text-left">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Páginas selecionadas para extração:</label>
-                        <input type="text" id="input-paginas" placeholder="Ex: 1, 3, 5-8" class="w-full p-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-rose-500">
-                        <p class="text-xs text-slate-500 mt-1">Dica: Clique nas miniaturas acima para selecionar/deselecionar páginas.</p>
-                    </div>
-
-                    <!-- Controles: Girar / Rodar -->
-                    <div id="ctrl-girar" class="hidden mb-4 text-center">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Aplicar rotação visual:</label>
-                        <div class="flex justify-center gap-2 mb-3">
-                            <button type="button" onclick="ajustarAngulo(-90)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-medium cursor-pointer">↺ -90°</button>
-                            <button type="button" onclick="ajustarAngulo(90)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-medium cursor-pointer">↻ +90°</button>
-                            <button type="button" onclick="ajustarAngulo(180)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-medium cursor-pointer">⇅ 180°</button>
-                        </div>
-                        <div class="inline-block bg-rose-50 text-rose-700 text-xs font-bold px-3 py-1 rounded-full">
-                            Rotação atual na prévia: <span id="display-angulo">90°</span>
-                        </div>
-                    </div>
-
-                    <!-- Controles: Comprimir (CORRIGIDO) -->
-                    <div id="ctrl-comprimir" class="hidden mb-4 text-left">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Nível de Compressão:</label>
-                        <select id="select-compressao" class="w-full p-3 rounded-xl border border-slate-300 text-sm bg-white">
-                            <option value="low">Compressão Leve (Mantém alta qualidade)</option>
-                            <option value="medium" selected>Compressão Recomendada (Equilíbrio ideal)</option>
-                            <option value="extreme">Compressão Extrema (Re-renderiza imagens e reduz drasticamente o peso)</option>
-                        </select>
-                        <p class="text-xs text-slate-500 mt-2">Nota: O modo Extrema reconstrói o arquivo rasterizando as páginas para diminuir o tamanho real.</p>
-                    </div>
-
-                    <!-- Controles: PDF para JPG -->
-                    <div id="ctrl-pdf-jpg" class="hidden mb-4 text-left">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Modo de Exportação:</label>
-                        <select id="select-modo-jpg" onchange="alternarInputPaginaJpg()" class="w-full p-3 rounded-xl border border-slate-300 text-sm bg-white mb-3">
-                            <option value="todas">Todas as páginas (Arquivo .ZIP)</option>
-                            <option value="unica">Apenas uma página específica (.JPG)</option>
-                        </select>
-                        <div id="box-pagina-unica-jpg" class="hidden">
-                            <label class="block text-xs text-slate-600 mb-1">Número da página:</label>
-                            <input type="number" id="input-pagina-jpg" min="1" value="1" class="w-full p-2.5 rounded-xl border border-slate-300 text-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Botão Executar -->
-                <button id="btn-executar" onclick="executarOperacao()" disabled class="w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed">
-                    ⚙️ Processar Arquivo Agora
-                </button>
-
-                <!-- Resultado / Download -->
-                <div id="output-area" class="mt-4 hidden pt-4 border-t border-slate-100 text-center">
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium mb-3">
-                        ✨ Concluído com sucesso!
-                    </div>
-                    <a id="download-link" class="inline-block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-sm text-sm">
-                        ⬇️ Baixar Resultado
-                    </a>
-                </div>
-            </div>
-
-        </div>
+  <!-- Conteúdo Principal -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    
+    <!-- Banner Inicial -->
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">
+        Todas as ferramentas PDF num só lugar
+      </h1>
+      <p class="text-slate-600 text-base sm:text-lg">
+        Junte, divida, converta e proteja os seus documentos gratuitamente. Nenhum ficheiro é enviado para servidores externos.
+      </p>
     </div>
 
-    <!-- Modal Pix -->
-    <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl text-center">
-            <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">Pix</div>
-            <h3 class="text-2xl font-bold text-slate-900 mb-1">Passe Ilimitado (24h)</h3>
-            <p class="text-sm text-slate-500 mb-6">Remova todos os limites por apenas **R$ 4,90**.</p>
-            
-            <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200 mb-6">
-                <p class="text-xs text-slate-500 mb-2 font-medium">Chave Pix Copia e Cola:</p>
-                <input type="text" readonly value="00020126580014br.gov.bcb.pix0136sua-chave-pix-aqui52040000530398654044.90..." class="text-xs text-slate-600 font-mono bg-white p-2.5 rounded-xl border border-slate-200 w-full mb-3 text-center"/>
-                <button onclick="alert('Código Pix copiado!')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded-xl transition cursor-pointer">
-                    Copiar Código Pix
-                </button>
-            </div>
-
-            <button onclick="ativarPasse()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition mb-3 cursor-pointer">
-                Já fiz o pagamento
-            </button>
-            <button onclick="fecharModal()" class="w-full text-xs text-slate-500 hover:text-slate-800 py-2 cursor-pointer">
-                Voltar
-            </button>
+    <!-- Secção: Organizar PDF -->
+    <section class="mb-10">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">📁 Organizar PDF</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="abrirFerramenta('merge')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📑</div>
+          <h3 class="font-bold text-slate-900 mb-1">Juntar PDF</h3>
+          <p class="text-sm text-slate-500">Combine vários ficheiros PDF num único documento ordenado.</p>
         </div>
+        <div onclick="abrirFerramenta('split')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">✂️</div>
+          <h3 class="font-bold text-slate-900 mb-1">Dividir / Extrair PDF</h3>
+          <p class="text-sm text-slate-500">Extraia páginas específicas ou separe um documento grande.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Secção: Converter PDF -->
+    <section class="mb-10">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">🔄 Converter PDF</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="abrirFerramenta('pdf2word')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📝</div>
+          <h3 class="font-bold text-slate-900 mb-1">PDF para Word</h3>
+          <p class="text-sm text-slate-500">Transforme PDF em arquivos DOCX editáveis.</p>
+        </div>
+        <div onclick="abrirFerramenta('pdf2excel')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📊</div>
+          <h3 class="font-bold text-slate-900 mb-1">PDF para Excel</h3>
+          <p class="text-sm text-slate-500">Extraia dados para planilhas XLSX.</p>
+        </div>
+        <div onclick="abrirFerramenta('pdf2ppt')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📽️</div>
+          <h3 class="font-bold text-slate-900 mb-1">PDF para PowerPoint</h3>
+          <p class="text-sm text-slate-500">Converta para apresentações PPTX.</p>
+        </div>
+        <div onclick="abrirFerramenta('pdf2jpg')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">🖼️</div>
+          <h3 class="font-bold text-slate-900 mb-1">PDF para JPG</h3>
+          <p class="text-sm text-slate-500">Exporte páginas em arquivos JPG ou ZIP.</p>
+        </div>
+        <div onclick="abrirFerramenta('word2pdf')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📄</div>
+          <h3 class="font-bold text-slate-900 mb-1">Word para PDF</h3>
+          <p class="text-sm text-slate-500">DOC/DOCX para PDF com máxima qualidade.</p>
+        </div>
+        <div onclick="abrirFerramenta('excel2pdf')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📈</div>
+          <h3 class="font-bold text-slate-900 mb-1">Excel para PDF</h3>
+          <p class="text-sm text-slate-500">Planilhas ajustadas à largura da página.</p>
+        </div>
+        <div onclick="abrirFerramenta('ppt2pdf')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📋</div>
+          <h3 class="font-bold text-slate-900 mb-1">PowerPoint para PDF</h3>
+          <p class="text-sm text-slate-500">PPT/PPTX para PDF com alta fidelidade.</p>
+        </div>
+        <div onclick="abrirFerramenta('jpg2pdf')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">📷</div>
+          <h3 class="font-bold text-slate-900 mb-1">JPG para PDF</h3>
+          <p class="text-sm text-slate-500">Transforme imagens em documento PDF.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Secção: Segurança & Edição -->
+    <section class="mb-10">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">🛡️ Segurança e Edição</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="abrirFerramenta('protect')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">🔐</div>
+          <h3 class="font-bold text-slate-900 mb-1">Proteger PDF</h3>
+          <p class="text-sm text-slate-500">Encripte documentos com senha.</p>
+        </div>
+        <div onclick="abrirFerramenta('unlock')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">🔓</div>
+          <h3 class="font-bold text-slate-900 mb-1">Desbloquear PDF</h3>
+          <p class="text-sm text-slate-500">Remova senhas e restrições autorizadas.</p>
+        </div>
+        <div onclick="abrirFerramenta('sign')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">✍️</div>
+          <h3 class="font-bold text-slate-900 mb-1">Assinar PDF</h3>
+          <p class="text-sm text-slate-500">Assine você mesmo ou solicite assinaturas.</p>
+        </div>
+        <div onclick="abrirFerramenta('watermark')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">💧</div>
+          <h3 class="font-bold text-slate-900 mb-1">Marca d'água</h3>
+          <p class="text-sm text-slate-500">Adicione texto ou imagem transparente.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-sm text-slate-500">
+    <p>PDFHub • Processamento local e seguro no seu navegador.</p>
+  </footer>
+
+  <!-- MODAL DE FERRAMENTA -->
+  <div id="tool-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModalFerramenta()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+      
+      <div class="flex items-center gap-3 mb-4">
+        <span id="modal-icon" class="text-3xl">📄</span>
+        <div>
+          <h3 id="modal-title" class="text-xl font-bold text-slate-900">Título da Ferramenta</h3>
+          <p id="modal-desc" class="text-sm text-slate-500">Descrição da ferramenta</p>
+        </div>
+      </div>
+
+      <!-- Zona de Upload -->
+      <div class="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl p-6 text-center mb-4">
+        <input type="file" id="file-input" class="hidden" onchange="atualizarListaFicheiros()" />
+        <label for="file-input" class="cursor-pointer flex flex-col items-center">
+          <span class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow transition mb-2">
+            Selecionar Ficheiro(s)
+          </span>
+          <span id="file-accept-hint" class="text-xs text-slate-500">Formatos aceites: .pdf</span>
+        </label>
+        <div id="file-list" class="mt-3 text-sm font-medium text-slate-700 space-y-1"></div>
+      </div>
+
+      <!-- Opções Dinâmicas por Ferramenta -->
+      <div id="dynamic-options" class="mb-5 space-y-3"></div>
+
+      <!-- Barra de Estado -->
+      <div id="status-msg" class="hidden text-sm p-3 rounded-lg mb-4 text-center font-medium"></div>
+
+      <!-- Botão Executar -->
+      <button id="btn-processar" onclick="executarFerramenta()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition">
+        Processar e Baixar
+      </button>
     </div>
+  </div>
 
-    <!-- Rodapé -->
-    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 bg-white">
-        &copy; 2026 PDFHub. Processamento privado e local.
-    </footer>
+  <!-- MODAL PIX APOIO -->
+  <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-center">
+      <button onclick="fecharModalPix()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+      
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+        ❤️
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Ajude nosso SITE</h3>
+      <p class="text-sm text-slate-600 mb-4">
+        O PDFHub é gratuito e sem limites. Se as ferramentas ajudaram no seu dia, contribua com qualquer valor via Pix para mantermos o projeto online!
+      </p>
 
-    <!-- Lógica JavaScript Corrigida -->
-    <script>
-        let ferramentaAtual = '';
-        let arquivosCarregados = [];
-        let pdfJsDocGlobal = null;
-        let totalPaginasPdf = 0;
-        let anguloRotacao = 90;
-        let paginasSelecionadas = new Set();
+      <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 mb-4 text-left">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pix Copia e Cola:</label>
+        <textarea id="pix-code-box" readonly rows="3" class="w-full bg-white text-xs font-mono p-2 rounded border border-slate-300 text-slate-700 focus:outline-none">00020126360014BR.GOV.BCB.PIX0114+55869982748205204000053039865802BR5903PIX6008Brasilia62070503***6304BED2</textarea>
+      </div>
 
-        const ferramentasConfig = {
-            'unir': { titulo: 'Juntar PDF', desc: 'Mescle e junte PDFs em qualquer ordem.', accept: '.pdf', multiple: true },
-            'dividir': { titulo: 'Dividir PDF', desc: 'Selecione intervalos e separe páginas.', accept: '.pdf', multiple: false },
-            'organizar': { titulo: 'Organizar PDF', desc: 'Ordene, exclua ou adicione páginas.', accept: '.pdf', multiple: false },
-            'girar': { titulo: 'Rodar PDF', desc: 'Gire arquivos PDF de uma só vez.', accept: '.pdf', multiple: false },
-            'comprimir': { titulo: 'Comprimir PDF', desc: 'Diminua o tamanho do seu arquivo PDF.', accept: '.pdf', multiple: false },
-            'reparar': { titulo: 'Reparar PDF', desc: 'Repare um PDF danificado.', accept: '.pdf', multiple: false },
-            'pdf-a': { titulo: 'PDF para PDF/A', desc: 'Padrão ISO para arquivo de longa duração.', accept: '.pdf', multiple: false },
-            'pdf-para-word': { titulo: 'PDF para Word', desc: 'Transforme PDF em DOCX editável.', accept: '.pdf', multiple: false },
-            'pdf-para-excel': { titulo: 'PDF para Excel', desc: 'Extraia dados para planilhas XLSX.', accept: '.pdf', multiple: false },
-            'pdf-para-ppt': { titulo: 'PDF para PowerPoint', desc: 'Converta para apresentações PPTX.', accept: '.pdf', multiple: false },
-            'pdf-para-jpg': { titulo: 'PDF para JPG', desc: 'Exporte páginas em arquivos JPG ou ZIP.', accept: '.pdf', multiple: false },
-            'word-para-pdf': { titulo: 'Word para PDF', desc: 'DOC/DOCX para PDF com máxima qualidade.', accept: '.docx, .doc', multiple: false },
-            'excel-para-pdf': { titulo: 'Excel para PDF', desc: 'Planilhas ajustadas à largura da página.', accept: '.xlsx, .xls', multiple: false },
-            'ppt-para-pdf': { titulo: 'PowerPoint para PDF', desc: 'PPT/PPTX para PDF com alta fidelidade.', accept: '.pptx, .ppt', multiple: false },
-            'jpg-para-pdf': { titulo: 'JPG para PDF', desc: 'Transforme imagens em documento PDF.', accept: 'image/*', multiple: true },
-            'proteger': { titulo: 'Proteger PDF', desc: 'Encripte documentos com senha.', accept: '.pdf', multiple: false },
-            'desbloquear': { titulo: 'Desbloquear PDF', desc: 'Remova senhas e restrições.', accept: '.pdf', multiple: false },
-            'assinar': { titulo: 'Assinar PDF', desc: 'Assine você mesmo ou solicite assinaturas.', accept: '.pdf', multiple: false },
-            'marca-dagua': { titulo: 'Marca d\'água', desc: 'Adicione texto ou imagem transparente.', accept: '.pdf', multiple: false }
-        };
+      <button onclick="copiarPix()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow transition">
+        📋 Copiar Código Pix
+      </button>
+    </div>
+  </div>
 
-        const homeView = document.getElementById('home-view');
-        const toolView = document.getElementById('tool-view');
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const addMoreInput = document.getElementById('add-more-input');
-        const fileLoadedContainer = document.getElementById('file-loaded-container');
-        const rightActionPanel = document.getElementById('right-action-panel');
-        const btnExecutar = document.getElementById('btn-executar');
-        const outputArea = document.getElementById('output-area');
-        const thumbnailsContainer = document.getElementById('thumbnails-container');
+  <!-- Área oculta para renderização HTML -> PDF -->
+  <div id="hidden-render-container" class="hidden"></div>
 
-        verificarStatusPass();
+  <script>
+    const CHAVE_PIX_COPIA_COLA = "00020126360014BR.GOV.BCB.PIX0114+55869982748205204000053039865802BR5903PIX6008Brasilia62070503***6304BED2";
+    let ferramentaAtual = null;
+    let signatureCanvas = null;
+    let signatureCtx = null;
+    let isDrawing = false;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.replace('#', '');
-            if (hash && ferramentasConfig[hash]) {
-                const f = ferramentasConfig[hash];
-                selecionarFerramenta(hash, f.titulo, f.desc, f.accept, f.multiple, false);
-            }
-        });
-
-        function selecionarFerramenta(id, titulo, descricao, acceptType, allowMultiple, atualizarHash = true) {
-            ferramentaAtual = id;
-            if (atualizarHash) window.location.hash = id;
-            homeView.classList.add('hidden');
-            toolView.classList.remove('hidden');
-            document.getElementById('tool-title').textContent = titulo;
-            document.getElementById('tool-desc').textContent = descricao;
-            
-            fileInput.accept = acceptType;
-            fileInput.multiple = allowMultiple;
-            addMoreInput.accept = acceptType;
-            addMoreInput.multiple = true;
-            document.getElementById('upload-label-text').textContent = allowMultiple ? 'Clique para selecionar os arquivos' : 'Clique para selecionar o arquivo';
-            
-            resetarFerramenta(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function voltarHome() {
-            window.location.hash = '';
-            toolView.classList.add('hidden');
-            homeView.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function resetarFerramenta(limparHash = true) {
-            if (limparHash) window.location.hash = '';
-            arquivosCarregados = [];
-            pdfJsDocGlobal = null;
-            totalPaginasPdf = 0;
-            anguloRotacao = 90;
-            paginasSelecionadas.clear();
-            document.getElementById('display-angulo').textContent = '90°';
-            fileInput.value = '';
-            
-            dropZone.classList.remove('hidden');
-            fileLoadedContainer.classList.add('hidden');
-            outputArea.classList.add('hidden');
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.add('hidden');
-
-            rightActionPanel.classList.add('opacity-60', 'pointer-events-none');
-            btnExecutar.disabled = true;
-            btnExecutar.className = "w-full mt-4 bg-slate-200 text-slate-400 font-bold py-3.5 rounded-xl transition shadow-sm cursor-not-allowed";
-            document.getElementById('placeholder-msg').style.display = 'block';
-
-            ['ctrl-dividir', 'ctrl-girar', 'ctrl-comprimir', 'ctrl-pdf-jpg', 'ctrl-lista-arquivos'].forEach(elId => {
-                document.getElementById(elId).classList.add('hidden');
-            });
-            document.getElementById('preview-counter').textContent = '';
-        }
-
-        fileInput.addEventListener('change', async function(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-
-            arquivosCarregados = files;
-            dropZone.classList.add('hidden');
-            fileLoadedContainer.classList.remove('hidden');
-            outputArea.classList.add('hidden');
-
-            rightActionPanel.classList.remove('opacity-60', 'pointer-events-none');
-            btnExecutar.disabled = false;
-            btnExecutar.className = "w-full mt-4 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl transition shadow-sm cursor-pointer";
-            document.getElementById('placeholder-msg').style.display = 'none';
-
-            await prepararPainelConfiguracao();
-        });
-
-        addMoreInput.addEventListener('change', function(e) {
-            const novos = Array.from(e.target.files);
-            arquivosCarregados = arquivosCarregados.concat(novos);
-            renderizarListaArquivos();
-            addMoreInput.value = '';
-        });
-
-        async function prepararPainelConfiguracao() {
-            const fileSummary = document.getElementById('file-summary');
-
-            if (ferramentaAtual === 'unir' || ferramentaAtual === 'jpg-para-pdf' || ferramentaAtual === 'organizar') {
-                fileSummary.textContent = `${arquivosCarregados.length} arquivo(s)`;
-                document.getElementById('ctrl-lista-arquivos').classList.remove('hidden');
-                renderizarListaArquivos();
-                if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
-            } else {
-                const file = arquivosCarregados[0];
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                fileSummary.textContent = `${file.name} (${sizeMB} MB)`;
-
-                if (file.type === 'application/pdf') {
-                    const buffer = await file.arrayBuffer();
-                    pdfJsDocGlobal = await pdfjsLib.getDocument({ data: buffer }).promise;
-                    totalPaginasPdf = pdfJsDocGlobal.numPages;
-
-                    document.getElementById('preview-counter').textContent = `${totalPaginasPdf} página(s)`;
-                    await gerarMiniaturasPdfVisual();
-                }
-
-                if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
-                    document.getElementById('ctrl-dividir').classList.remove('hidden');
-                    for(let i=0; i<totalPaginasPdf; i++) paginasSelecionadas.add(i);
-                    atualizarInputPaginasTexto();
-                } else if (ferramentaAtual === 'girar') {
-                    document.getElementById('ctrl-girar').classList.remove('hidden');
-                } else if (ferramentaAtual === 'comprimir') {
-                    document.getElementById('ctrl-comprimir').classList.remove('hidden');
-                } else if (ferramentaAtual === 'pdf-para-jpg') {
-                    document.getElementById('ctrl-pdf-jpg').classList.remove('hidden');
-                    document.getElementById('input-pagina-jpg').max = totalPaginasPdf;
-                }
-            }
-        }
-
-        async function gerarMiniaturasPdfVisual() {
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.remove('hidden');
-
-            for (let i = 1; i <= totalPaginasPdf; i++) {
-                const page = await pdfJsDocGlobal.getPage(i);
-                const viewport = page.getViewport({ scale: 0.3 });
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                canvas.className = "rounded shadow-xs transition-transform duration-200";
-
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = "page-thumb relative border-2 border-slate-200 rounded-xl p-1 bg-white cursor-pointer flex flex-col items-center group";
-                if ((ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') && paginasSelecionadas.has(i - 1)) {
-                    wrapper.classList.add('selected');
-                }
-                
-                wrapper.onclick = () => {
-                    if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
-                        if (paginasSelecionadas.has(i - 1)) {
-                            paginasSelecionadas.delete(i - 1);
-                            wrapper.classList.remove('selected');
-                        } else {
-                            paginasSelecionadas.add(i - 1);
-                            wrapper.classList.add('selected');
-                        }
-                        atualizarInputPaginasTexto();
-                    }
-                };
-
-                const badge = document.createElement('span');
-                badge.className = "page-badge absolute top-2 right-2 bg-slate-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10 shadow";
-                badge.textContent = i;
-
-                wrapper.appendChild(badge);
-                wrapper.appendChild(canvas);
-                thumbnailsContainer.appendChild(wrapper);
-            }
-        }
-
-        function renderizarListaArquivos() {
-            const ul = document.getElementById('file-list-ul');
-            ul.innerHTML = '';
-            arquivosCarregados.forEach((file, index) => {
-                const li = document.createElement('li');
-                li.className = 'flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs';
-                li.innerHTML = `
-                    <span class="truncate font-medium text-slate-700 max-w-[60%]">${index + 1}. ${file.name}</span>
-                    <div class="flex items-center gap-1">
-                        <button type="button" onclick="moverArquivo(${index}, -1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↑</button>
-                        <button type="button" onclick="moverArquivo(${index}, 1)" class="px-2 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 cursor-pointer">↓</button>
-                        <button type="button" onclick="removerArquivo(${index})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded hover:bg-rose-100 cursor-pointer">✕</button>
-                    </div>
-                `;
-                ul.appendChild(li);
-            });
-            document.getElementById('file-summary').textContent = `${arquivosCarregados.length} arquivo(s) na fila`;
-        }
-
-        function renderizarMiniaturasImagens() {
-            thumbnailsContainer.innerHTML = '';
-            thumbnailsContainer.classList.remove('hidden');
-            arquivosCarregados.forEach((file) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = "w-full h-20 object-cover rounded-lg border border-slate-200";
-                    thumbnailsContainer.appendChild(img);
-                }
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function moverArquivo(index, direcao) {
-            const novoIndex = index + direcao;
-            if (novoIndex < 0 || novoIndex >= arquivosCarregados.length) return;
-            const temp = arquivosCarregados[index];
-            arquivosCarregados[index] = arquivosCarregados[novoIndex];
-            arquivosCarregados[novoIndex] = temp;
-            renderizarListaArquivos();
-            if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
-        }
-
-        function removerArquivo(index) {
-            arquivosCarregados.splice(index, 1);
-            if (arquivosCarregados.length === 0) {
-                resetarFerramenta();
-            } else {
-                renderizarListaArquivos();
-                if (ferramentaAtual === 'jpg-para-pdf') renderizarMiniaturasImagens();
-            }
-        }
-
-        function ajustarAngulo(delta) {
-            anguloRotacao = (anguloRotacao + delta) % 360;
-            if (anguloRotacao < 0) anguloRotacao += 360;
-            document.getElementById('display-angulo').textContent = `${anguloRotacao}°`;
-
-            const canvases = thumbnailsContainer.querySelectorAll('canvas');
-            canvases.forEach(c => {
-                c.style.transform = `rotate(${anguloRotacao}deg)`;
-                c.style.transition = 'transform 0.3s ease';
-            });
-        }
-
-        function atualizarInputPaginasTexto() {
-            const arr = Array.from(paginasSelecionadas).sort((a,b) => a-b).map(n => n + 1);
-            document.getElementById('input-paginas').value = arr.join(', ');
-        }
-
-        function alternarInputPaginaJpg() {
-            const modo = document.getElementById('select-modo-jpg').value;
-            const box = document.getElementById('box-pagina-unica-jpg');
-            if (modo === 'unica') box.classList.remove('hidden');
-            else box.classList.add('hidden');
-        }
-
-        function parseIntervaloPaginas(texto, maxPaginas) {
-            const indices = new Set();
-            const partes = texto.split(',');
-            for (let parte of partes) {
-                parte = parte.trim();
-                if (parte.includes('-')) {
-                    const [inicio, fim] = parte.split('-').map(n => parseInt(n.trim(), 10));
-                    if (!isNaN(inicio) && !isNaN(fim)) {
-                        for (let i = Math.max(1, inicio); i <= Math.min(maxPaginas, fim); i++) {
-                            indices.add(i - 1);
-                        }
-                    }
-                } else {
-                    const num = parseInt(parte, 10);
-                    if (!isNaN(num) && num >= 1 && num <= maxPaginas) {
-                        indices.add(num - 1);
-                    }
-                }
-            }
-            return Array.from(indices).sort((a, b) => a - b);
-        }
-
-        async function executarOperacao() {
-            btnExecutar.disabled = true;
-            btnExecutar.textContent = '⏳ Processando...';
-            outputArea.classList.add('hidden');
-
-            try {
-                if (ferramentaAtual === 'unir') {
-                    if (arquivosCarregados.length < 2) {
-                        alert('Adicione pelo menos 2 arquivos PDF para unir.');
-                        return;
-                    }
-                    const { PDFDocument } = PDFLib;
-                    const pdfFinal = await PDFDocument.create();
-                    for (const file of arquivosCarregados) {
-                        const buffer = await file.arrayBuffer();
-                        const pdfDoc = await PDFDocument.load(buffer);
-                        const paginas = await pdfFinal.copyPages(pdfDoc, pdfDoc.getPageIndices());
-                        paginas.forEach(p => pdfFinal.addPage(p));
-                    }
-                    const bytes = await pdfFinal.save();
-                    finalizarDownload(bytes, 'application/pdf', 'pdfhub-unido.pdf');
-
-                } else if (ferramentaAtual === 'dividir' || ferramentaAtual === 'organizar') {
-                    const textoIntervalo = document.getElementById('input-paginas').value;
-                    const indices = parseIntervaloPaginas(textoIntervalo, totalPaginasPdf);
-                    if (indices.length === 0) {
-                        alert('Selecione pelo menos uma página válida.');
-                        return;
-                    }
-                    const { PDFDocument } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    const novoPdf = await PDFDocument.create();
-                    const paginasCopiadas = await novoPdf.copyPages(pdfDoc, indices);
-                    paginasCopiadas.forEach(p => novoPdf.addPage(p));
-                    const bytes = await novoPdf.save();
-                    finalizarDownload(bytes, 'application/pdf', 'pdf-organizado.pdf');
-
-                } else if (ferramentaAtual === 'girar') {
-                    const { PDFDocument, degrees } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    pdfDoc.getPages().forEach(p => {
-                        const rotacaoAtual = p.getRotation().angle;
-                        p.setRotation(degrees((rotacaoAtual + anguloRotacao) % 360));
-                    });
-                    const bytes = await pdfDoc.save();
-                    finalizarDownload(bytes, 'application/pdf', 'pdf-rodado.pdf');
-
-                } else if (ferramentaAtual === 'comprimir') {
-                    // COMPRESSÃO CORRIGIDA: Re-renderiza via canvas no modo extremo ou otimiza streams
-                    const nivel = document.getElementById('select-compressao').value;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-
-                    if (nivel === 'extreme') {
-                        const loadingTask = pdfjsLib.getDocument({ data: buffer });
-                        const pdf = await loadingTask.promise;
-                        const { PDFDocument } = PDFLib;
-                        const pdfDocNew = await PDFDocument.create();
-
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const viewport = page.getViewport({ scale: 1.0 });
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = viewport.width;
-                            canvas.height = viewport.height;
-                            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-                            const imgDataUrl = canvas.toDataURL('image/jpeg', 0.65);
-                            const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
-                            const embeddedImage = await pdfDocNew.embedJpg(imgBytes);
-
-                            const newPage = pdfDocNew.addPage([viewport.width, viewport.height]);
-                            newPage.drawImage(embeddedImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
-                        }
-                        const bytes = await pdfDocNew.save({ useObjectStreams: true });
-                        finalizarDownload(bytes, 'application/pdf', 'pdf-comprimido.pdf');
-                    } else {
-                        const { PDFDocument } = PDFLib;
-                        const pdfDoc = await PDFDocument.load(buffer);
-                        const bytes = await pdfDoc.save({ useObjectStreams: true, addDefaultPage: false });
-                        finalizarDownload(bytes, 'application/pdf', 'pdf-otimizado.pdf');
-                    }
-
-                } else if (ferramentaAtual === 'jpg-para-pdf' || ['word-para-pdf', 'excel-para-pdf', 'ppt-para-pdf'].includes(ferramentaAtual)) {
-                    const { PDFDocument } = PDFLib;
-                    const pdfDoc = await PDFDocument.create();
-                    for (const file of arquivosCarregados) {
-                        const buffer = await file.arrayBuffer();
-                        if (file.type.includes('image')) {
-                            const img = file.type === 'image/png' ? await pdfDoc.embedPng(buffer) : await pdfDoc.embedJpg(buffer);
-                            const page = pdfDoc.addPage([img.width, img.height]);
-                            page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-                        } else {
-                            const page = pdfDoc.addPage([600, 800]);
-                            page.drawText(`Documento convertido: ${file.name}`, { x: 50, y: 750, size: 16 });
-                        }
-                    }
-                    const bytes = await pdfDoc.save();
-                    finalizarDownload(bytes, 'application/pdf', 'documento-convertido.pdf');
-
-                } else if (ferramentaAtual === 'pdf-para-jpg') {
-                    const modo = document.getElementById('select-modo-jpg').value;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
-                    if (modo === 'unica') {
-                        const numPag = parseInt(document.getElementById('input-pagina-jpg').value, 10);
-                        if (numPag < 1 || numPag > pdf.numPages) {
-                            alert(`Escolha uma página entre 1 e ${pdf.numPages}.`);
-                            return;
-                        }
-                        const blob = await renderizarPaginaParaBlob(pdf, numPag);
-                        finalizarDownloadBlob(blob, `pagina-${numPag}.jpg`);
-                    } else {
-                        const zip = new JSZip();
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const blob = await renderizarPaginaParaBlob(pdf, i);
-                            zip.file(`pagina-${i}.jpg`, blob);
-                        }
-                        const zipBlob = await zip.generateAsync({ type: 'blob' });
-                        finalizarDownloadBlob(zipBlob, 'paginas-pdf.zip');
-                    }
-                } else {
-                    // Ferramentas de suporte / conversão geral
-                    const { PDFDocument } = PDFLib;
-                    const buffer = await arquivosCarregados[0].arrayBuffer();
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    const bytes = await pdfDoc.save();
-                    finalizarDownload(bytes, 'application/pdf', 'arquivo-processado.pdf');
-                }
-            } catch (erro) {
-                console.error(erro);
-                alert('Erro ao processar arquivo. Verifique se o documento não possui senha.');
-            } finally {
-                btnExecutar.disabled = false;
-                btnExecutar.textContent = '⚙️ Processar Arquivo Agora';
-            }
-        }
-
-        async function renderizarPaginaParaBlob(pdf, numPagina) {
-            const page = await pdf.getPage(numPagina);
-            const viewport = page.getViewport({ scale: 1.5 });
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-        }
-
-        function finalizarDownload(bytes, mimeType, nomeArquivo) {
-            const blob = new Blob([bytes], { type: mimeType });
-            finalizarDownloadBlob(blob, nomeArquivo);
-        }
-
-        function finalizarDownloadBlob(blob, nomeArquivo) {
-            const url = URL.createObjectURL(blob);
-            const link = document.getElementById('download-link');
-            link.href = url;
-            link.download = nomeArquivo;
-            outputArea.classList.remove('hidden');
-        }
-
-        function abrirModalPix() { document.getElementById('pix-modal').classList.remove('hidden'); }
-        function fecharModal() { document.getElementById('pix-modal').classList.add('hidden'); }
-        function ativarPasse() {
-            localStorage.setItem('pdf_pass_expira', Date.now() + 86400000);
-            fecharModal();
-            verificarStatusPass();
-            alert('Passe ilimitado ativado por 24 horas!');
-        }
-        function verificarStatusPass() {
-            const exp = localStorage.getItem('pdf_pass_expira');
-            if (exp && Date.now() < parseInt(exp, 10)) {
-                const badge = document.getElementById('status-badge');
-                badge.textContent = '✨ Acesso Ilimitado Ativo (24h)';
-                badge.className = 'text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1 rounded-full border border-emerald-200';
-            }
-        }
-    </script>
-</body>
-</html>
+    const CONFIG_FERRAMENTAS = {
+      merge: {
+        icon: '📑', title: 'Juntar PDF', desc: 'Selecione 2 ou mais arquivos PDF para unir.',
+        accept: '.pdf', multiple: true, hint: 'Selecione múltiplos ficheiros .pdf'
+      },
+      split: {
+        icon: '✂️', title: 'Dividir / Extrair PDF', desc: 'Extraia páginas específicas (ex: 1, 3-5).',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      pdf2word: {
+        icon: '📝', title: 'PDF para Word', desc: 'Transforme PDF em arquivos DOCX editáveis.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      pdf2excel: {
+        icon: '📊', title: 'PDF para Excel', desc: 'Extraia dados para planilhas XLSX.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      pdf2ppt: {
+        icon: '📽️', title: 'PDF para PowerPoint', desc: 'Converta páginas de PDF em slides PPTX.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      pdf2jpg: {
+        icon: '🖼️', title: 'PDF para JPG', desc: 'Exporte páginas em arquivos JPG ou ZIP.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      word2pdf: {
+        icon: '📄', title: 'Word para PDF', desc: 'DOCX para PDF com máxima qualidade.',
+        accept: '.docx', multiple: false, hint: 'Selecione 1 ficheiro .docx'
+      },
+      excel2pdf: {
+        icon: '📈', title: 'Excel para PDF', desc: 'Planilhas XLSX/XLS ajustadas à página PDF.',
+        accept: '.xlsx,.xls,.csv', multiple: false, hint: 'Selecione 1 ficheiro .xlsx, .xls ou .csv'
+      },
+      ppt2pdf: {
