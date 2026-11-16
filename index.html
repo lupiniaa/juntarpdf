@@ -8,31 +8,20 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Bibliotecas PDF & Office Client-Side -->
-  <!-- @cantoo/pdf-lib suporta encriptação com senha no navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <!-- PDF.js para leitura e renderização -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- SheetJS para Excel (.xlsx) -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <!-- docx.js para Word (.docx) real -->
-  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
-  <!-- PptxGenJS para PowerPoint (.pptx) real -->
-  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-  <!-- JSZip para empacotar múltiplas imagens -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <!-- Mammoth.js para ler DOCX -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-  <!-- html2pdf.js para converter HTML de Office em PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  </script>
+  <!-- Bibliotecas PDF & Office Oficiais e Estáveis (Carregamento com defer para não travar a tela) -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    .tool-card { transition: all 0.2s ease; }
+    .tool-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .tool-card:hover { transform: translateY(-3px); }
     #signature-pad { touch-action: none; cursor: crosshair; }
   </style>
@@ -51,7 +40,7 @@
         <span class="hidden md:inline-block text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
           🔒 100% no seu navegador • Privacidade total
         </span>
-        <button onclick="abrirModalPix()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <button type="button" onclick="abrirModalPix()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer">
           <span>❤️</span>
           <span>Ajude nosso SITE</span>
         </button>
@@ -173,7 +162,7 @@
   <!-- MODAL DE FERRAMENTA -->
   <div id="tool-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModalFerramenta()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+      <button type="button" onclick="fecharModalFerramenta()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold cursor-pointer">&times;</button>
       
       <div class="flex items-center gap-3 mb-4">
         <span id="modal-icon" class="text-3xl">📄</span>
@@ -202,7 +191,7 @@
       <div id="status-msg" class="hidden text-sm p-3 rounded-lg mb-4 text-center font-medium"></div>
 
       <!-- Botão Executar -->
-      <button id="btn-processar" onclick="executarFerramenta()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition">
+      <button type="button" id="btn-processar" onclick="executarFerramenta()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition cursor-pointer">
         Processar e Baixar
       </button>
     </div>
@@ -211,7 +200,7 @@
   <!-- MODAL PIX APOIO -->
   <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-center">
-      <button onclick="fecharModalPix()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+      <button type="button" onclick="fecharModalPix()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold cursor-pointer">&times;</button>
       
       <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
         ❤️
@@ -226,16 +215,20 @@
         <textarea id="pix-code-box" readonly rows="3" class="w-full bg-white text-xs font-mono p-2 rounded border border-slate-300 text-slate-700 focus:outline-none">00020126360014BR.GOV.BCB.PIX0114+55869982748205204000053039865802BR5903PIX6008Brasilia62070503***6304BED2</textarea>
       </div>
 
-      <button onclick="copiarPix()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow transition">
+      <button type="button" onclick="copiarPix()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow transition cursor-pointer">
         📋 Copiar Código Pix
       </button>
     </div>
   </div>
 
-  <!-- Área oculta para renderização HTML -> PDF -->
-  <div id="hidden-render-container" class="hidden"></div>
-
   <script>
+    // Inicialização segura do Worker do PDF.js após carregamento da página
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    });
+
     const CHAVE_PIX_COPIA_COLA = "00020126360014BR.GOV.BCB.PIX0114+55869982748205204000053039865802BR5903PIX6008Brasilia62070503***6304BED2";
     let ferramentaAtual = null;
     let signatureCanvas = null;
@@ -288,8 +281,8 @@
         accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
       },
       unlock: {
-        icon: '🔓', title: 'Desbloquear PDF', desc: 'Remova a senha de um PDF protegido.',
-        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf protegido'
+        icon: '🔓', title: 'Desbloquear PDF', desc: 'Remova restrições ou senha de um PDF.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
       },
       sign: {
         icon: '✍️', title: 'Assinar PDF', desc: 'Desenhe a sua assinatura e aplique no documento.',
@@ -311,14 +304,20 @@
     }
 
     function copiarPix() {
-      navigator.clipboard.writeText(CHAVE_PIX_COPIA_COLA).then(() => {
-        alert("✅ Código Pix Copia e Cola copiado! Muito obrigado por apoiar o site.");
-      }).catch(() => {
-        const box = document.getElementById('pix-code-box');
-        box.select();
-        document.execCommand('copy');
-        alert("✅ Código Pix copiado!");
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(CHAVE_PIX_COPIA_COLA).then(() => {
+          alert("✅ Código Pix Copia e Cola copiado! Muito obrigado por apoiar o site.");
+        }).catch(() => fallbackCopiarPix());
+      } else {
+        fallbackCopiarPix();
+      }
+    }
+
+    function fallbackCopiarPix() {
+      const box = document.getElementById('pix-code-box');
+      box.select();
+      document.execCommand('copy');
+      alert("✅ Código Pix copiado!");
     }
 
     function abrirFerramenta(tipo) {
@@ -382,14 +381,14 @@
       } else if (tipo === 'protect') {
         container.innerHTML = `
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Defina uma senha para abrir o PDF:</label>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Defina uma senha para proteger o PDF:</label>
             <input type="password" id="opt-password" placeholder="Digite a senha secreta" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
           </div>`;
       } else if (tipo === 'unlock') {
         container.innerHTML = `
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Senha atual do PDF:</label>
-            <input type="password" id="opt-unlock-password" placeholder="Digite a senha atual do ficheiro" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+            <label class="block text-xs font-bold text-slate-600 mb-1">Senha atual do PDF (se houver):</label>
+            <input type="password" id="opt-unlock-password" placeholder="Digite a senha ou deixe vazio para remover restrições" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
           </div>`;
       } else if (tipo === 'watermark') {
         container.innerHTML = `
@@ -402,7 +401,7 @@
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="text-xs font-bold text-slate-600">Desenhe sua assinatura abaixo:</label>
-              <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline">Limpar</button>
+              <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline cursor-pointer">Limpar</button>
             </div>
             <canvas id="signature-pad" width="480" height="140" class="w-full border border-slate-300 rounded-lg bg-slate-50"></canvas>
             <div class="mt-2">
@@ -458,7 +457,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     // --- MOTOR DE PROCESSAMENTO ---
@@ -546,31 +545,75 @@
       baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Extraido.pdf');
     }
 
-    // 3. Proteger PDF (Encriptar com Senha)
+    // 3. Proteger PDF (Renderiza e gera PDF protegido via jsPDF encryption nativa)
     async function procProtect(file) {
       const pwd = document.getElementById('opt-password').value;
       if (!pwd) throw new Error("Digite uma senha para proteger o documento.");
       
       const bytes = await file.arrayBuffer();
-      const pdfDoc = await PDFLib.PDFDocument.load(bytes);
-      await pdfDoc.encrypt({
-        userPassword: pwd,
-        ownerPassword: pwd,
-        permissions: { printing: 'highResolution', modifying: false, copying: false }
-      });
-      const outBytes = await pdfDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Protegido.pdf');
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const { jsPDF } = window.jspdf;
+      
+      let doc = null;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const orientation = viewport.width > viewport.height ? 'l' : 'p';
+        
+        if (i === 1) {
+          doc = new jsPDF({
+            orientation,
+            unit: 'px',
+            format: [viewport.width, viewport.height],
+            encryption: {
+              userPassword: pwd,
+              ownerPassword: pwd,
+              userPermissions: ["print"]
+            }
+          });
+        } else {
+          doc.addPage([viewport.width, viewport.height], orientation);
+        }
+        doc.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
+      }
+      doc.save('PDFHub_Protegido.pdf');
     }
 
     // 4. Desbloquear PDF
     async function procUnlock(file) {
       const pwd = document.getElementById('opt-unlock-password').value;
-      if (!pwd) throw new Error("Informe a senha atual do PDF.");
-      
       const bytes = await file.arrayBuffer();
-      const pdfDoc = await PDFLib.PDFDocument.load(bytes, { password: pwd });
-      const outBytes = await pdfDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
+      
+      // Se tiver senha de abertura, usa pdf.js com password para reconstruir limpo
+      if (pwd) {
+        const pdf = await pdfjsLib.getDocument({ data: bytes, password: pwd }).promise;
+        const newPdf = await PDFLib.PDFDocument.create();
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.8 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const jpgBytes = await fetch(canvas.toDataURL('image/jpeg', 0.9)).then(r => r.arrayBuffer());
+          const img = await newPdf.embedJpg(jpgBytes);
+          const p = newPdf.addPage([viewport.width, viewport.height]);
+          p.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+        }
+        const outBytes = await newPdf.save();
+        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
+      } else {
+        // Remove restrições de cópia/impressão mantendo vetores originais
+        const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        const outBytes = await pdfDoc.save();
+        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
+      }
     }
 
     // 5. Marca d'água
@@ -762,7 +805,7 @@
       await html2pdf().set({ jsPDF: { orientation: 'landscape' } }).from(container).save('PDFHub_Planilha.pdf');
     }
 
-    // 14. PowerPoint (.pptx) para PDF (Extração de texto dos slides)
+    // 14. PowerPoint (.pptx) para PDF
     async function procPpt2Pdf(file) {
       const bytes = await file.arrayBuffer();
       const zip = await JSZip.loadAsync(bytes);
