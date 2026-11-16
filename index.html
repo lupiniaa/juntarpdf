@@ -398,4 +398,732 @@
         card.innerHTML = `
           <span class="absolute top-1 left-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#${idx + 1}</span>
           <button type="button" onclick="removerArquivoMerge(${idx})" class="absolute top-1 right-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold w-5 h-5 rounded-full">×</button>
-          ${thumb.dataUrl ? `<img src="${thumb.dataUrl}" class="h-24 object-contain my-1 border border-slate-100" />` : `<div class="
+          ${thumb.dataUrl ? `<img src="${thumb.dataUrl}" class="h-24 object-contain my-1 border border-slate-100" />` : `<div class="h-24 flex items-center justify-center text-3xl">📄</div>`}
+          <p class="text-[11px] font-semibold text-slate-700 truncate w-full" title="${file.name}">${file.name}</p>
+          <span class="text-[10px] text-slate-400">${thumb.numPages} pág(s)</span>
+          <div class="flex gap-2 mt-1.5">
+            <button type="button" onclick="moverArquivoMerge(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">◀</button>
+            <button type="button" onclick="moverArquivoMerge(${idx}, 1)" ${idx === mergeFilesArray.length - 1 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">▶</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    async function moverArquivoMerge(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= mergeFilesArray.length) return;
+      const temp = mergeFilesArray[index];
+      mergeFilesArray[index] = mergeFilesArray[newIndex];
+      mergeFilesArray[newIndex] = temp;
+      await renderizarPreviewMerge({ abort: false });
+    }
+
+    async function removerArquivoMerge(index) {
+      mergeFilesArray.splice(index, 1);
+      if (mergeFilesArray.length === 0) {
+        document.getElementById('preview-area').classList.add('hidden');
+      } else {
+        await renderizarPreviewMerge({ abort: false });
+      }
+    }
+
+    async function renderizarPreviewSplit(file, token) {
+      const previewArea = document.getElementById('preview-area');
+      const grid = document.getElementById('preview-grid');
+      document.getElementById('preview-title').textContent = 'Pré-visualização das Páginas';
+      document.getElementById('preview-subtitle').textContent = 'Clique nas páginas para selecionar';
+      
+      previewArea.classList.remove('hidden');
+      grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-4">A gerar miniaturas...</div>';
+      selectedSplitPages.clear();
+
+      try {
+        const bytes = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        grid.innerHTML = '';
+
+        const maxPreview = Math.min(pdf.numPages, 24);
+        for (let i = 1; i <= maxPreview; i++) {
+          if (token && token.abort) return;
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 0.3 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          await yieldToMain();
+
+          const card = document.createElement('div');
+          card.id = `split-thumb-${i}`;
+          card.onclick = () => alternarPaginaSplit(i);
+          card.className = 'bg-white border-2 border-slate-200 rounded-lg p-2 flex flex-col items-center cursor-pointer transition hover:border-blue-400';
+          card.innerHTML = `
+            <img src="${canvas.toDataURL('image/jpeg', 0.7)}" class="h-24 object-contain mb-1" />
+            <span class="text-xs font-bold text-slate-700">Página ${i}</span>
+          `;
+          grid.appendChild(card);
+        }
+        if (pdf.numPages > 24) {
+          const info = document.createElement('div');
+          info.className = 'col-span-full text-center text-xs text-slate-500 pt-2';
+          info.textContent = `Mostrando 24 de ${pdf.numPages} páginas. Pode digitar qualquer número no campo abaixo.`;
+          grid.appendChild(info);
+        }
+      } catch (e) {
+        grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-2">Pré-visualização indisponível para este ficheiro, mas pode digitar as páginas abaixo.</div>';
+      }
+    }
+
+    function alternarPaginaSplit(pageNum) {
+      const card = document.getElementById(`split-thumb-${pageNum}`);
+      if (selectedSplitPages.has(pageNum)) {
+        selectedSplitPages.delete(pageNum);
+        if (card) card.classList.remove('page-thumb-selected');
+      } else {
+        selectedSplitPages.add(pageNum);
+        if (card) card.classList.add('page-thumb-selected');
+      }
+      const sorted = Array.from(selectedSplitPages).sort((a, b) => a - b);
+      const input = document.getElementById('opt-pages');
+      if (input) input.value = sorted.join(', ');
+    }
+
+    async function renderizarPreviewRotate(file, token) {
+      const previewArea = document.getElementById('preview-area');
+      const grid = document.getElementById('preview-grid');
+      document.getElementById('preview-title').textContent = 'Pré-visualização da Rotação';
+      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
+      
+      previewArea.classList.remove('hidden');
+      grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-4">A carregar páginas...</div>';
+
+      try {
+        const bytes = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        grid.innerHTML = '';
+        const maxPreview = Math.min(pdf.numPages, 12);
+
+        for (let i = 1; i <= maxPreview; i++) {
+          if (token && token.abort) return;
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 0.3 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          await yieldToMain();
+
+          const card = document.createElement('div');
+          card.className = 'bg-white border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center overflow-hidden';
+          card.innerHTML = `
+            <div class="h-28 flex items-center justify-center">
+              <img src="${canvas.toDataURL('image/jpeg', 0.7)}" style="transform: rotate(${currentRotationAngle}deg); transition: transform 0.25s ease;" class="max-h-24 max-w-full object-contain rotate-preview-img" />
+            </div>
+            <span class="text-xs font-bold text-slate-600 mt-1">Pág. ${i}</span>
+          `;
+          grid.appendChild(card);
+        }
+      } catch (e) {
+        grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-2">Escolha o ângulo abaixo e clique em Processar.</div>';
+      }
+    }
+
+    function aplicarRotacaoPreview(graus) {
+      currentRotationAngle = (currentRotationAngle + graus + 360) % 360;
+      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
+      document.getElementById('rotate-angle-display').textContent = `${currentRotationAngle}°`;
+      document.querySelectorAll('.rotate-preview-img').forEach(img => {
+        img.style.transform = `rotate(${currentRotationAngle}deg)`;
+      });
+    }
+
+    function mostrarStatus(msg, isError = false) {
+      const el = document.getElementById('status-msg');
+      el.textContent = msg;
+      el.className = `text-sm p-3 rounded-lg mb-4 text-center font-medium ${isError ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`;
+      el.classList.remove('hidden');
+    }
+
+    function ocultarStatus() {
+      document.getElementById('status-msg').classList.add('hidden');
+    }
+
+    function montarOpcoesDinamicas(tipo) {
+      const container = document.getElementById('dynamic-options');
+      container.innerHTML = '';
+
+      if (tipo === 'split') {
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Páginas selecionadas ou intervalo (ex: 1, 2, 4-6):</label>
+            <input type="text" id="opt-pages" placeholder="Clique nas miniaturas acima ou digite ex: 1, 3-5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+          </div>`;
+      } else if (tipo === 'rotate') {
+        container.innerHTML = `
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-sm font-bold text-slate-700">Rotação: <span id="rotate-angle-display" class="text-blue-600">0°</span></span>
+            <div class="flex gap-2">
+              <button type="button" onclick="aplicarRotacaoPreview(-90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">↺ -90° (Esquerda)</button>
+              <button type="button" onclick="aplicarRotacaoPreview(90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">↻ +90° (Direita)</button>
+              <button type="button" onclick="aplicarRotacaoPreview(180)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">⇅ 180°</button>
+            </div>
+          </div>`;
+      } else if (tipo === 'protect') {
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Defina uma senha para proteger o PDF:</label>
+            <input type="password" id="opt-password" placeholder="Digite a senha secreta" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+          </div>`;
+      } else if (tipo === 'unlock') {
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Senha atual do PDF (se houver):</label>
+            <input type="password" id="opt-unlock-password" placeholder="Digite a senha ou deixe vazio para remover restrições" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+          </div>`;
+      } else if (tipo === 'watermark') {
+        container.innerHTML = `
+          <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Tipo de Marca d'água:</label>
+              <select id="opt-wm-type" onchange="alternarTipoMarcaDagua()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                <option value="text">Texto Transparente</option>
+                <option value="image">Imagem Transparente (PNG / JPG)</option>
+              </select>
+            </div>
+            <div id="wm-text-group" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Texto:</label>
+                <input type="text" id="opt-watermark" value="CONFIDENCIAL" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Opacidade (0.1 a 1.0):</label>
+                <input type="number" id="opt-wm-opacity" value="0.35" min="0.1" max="1" step="0.05" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+            </div>
+            <div id="wm-image-group" class="hidden">
+              <label class="block text-xs font-bold text-slate-600 mb-1">Selecione a imagem da marca d'água (PNG/JPG):</label>
+              <input type="file" id="opt-wm-image" accept="image/png,image/jpeg" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white" />
+            </div>
+          </div>`;
+      } else if (tipo === 'sign') {
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-slate-600">Desenhe sua assinatura abaixo:</label>
+                <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline cursor-pointer font-semibold">Limpar Quadro</button>
+              </div>
+              <canvas id="signature-pad" width="520" height="140" class="w-full border-2 border-slate-300 rounded-lg bg-white"></canvas>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Aplicar na página (0 = última página):</label>
+                <input type="number" id="opt-sign-page" value="0" min="0" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Posição na página:</label>
+                <select id="opt-sign-pos" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                  <option value="bottom-right">Canto Inferior Direito</option>
+                  <option value="bottom-center">Inferior Centralizado</option>
+                  <option value="bottom-left">Canto Inferior Esquerdo</option>
+                  <option value="center">Centro da Página</option>
+                </select>
+              </div>
+            </div>
+          </div>`;
+        setTimeout(inicializarCanvasAssinatura, 50);
+      }
+    }
+
+    function alternarTipoMarcaDagua() {
+      const type = document.getElementById('opt-wm-type').value;
+      document.getElementById('wm-text-group').classList.toggle('hidden', type !== 'text');
+      document.getElementById('wm-image-group').classList.toggle('hidden', type !== 'image');
+    }
+
+    function inicializarCanvasAssinatura() {
+      signatureCanvas = document.getElementById('signature-pad');
+      if (!signatureCanvas) return;
+      signatureCtx = signatureCanvas.getContext('2d');
+      signatureCtx.strokeStyle = '#0f172a';
+      signatureCtx.lineWidth = 2.8;
+      signatureCtx.lineCap = 'round';
+      signatureCtx.lineJoin = 'round';
+      hasDrawnSignature = false;
+
+      const getPos = (e) => {
+        const rect = signatureCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (clientX - rect.left) * (signatureCanvas.width / rect.width),
+          y: (clientY - rect.top) * (signatureCanvas.height / rect.height)
+        };
+      };
+
+      const start = (e) => { isDrawing = true; hasDrawnSignature = true; const p = getPos(e); signatureCtx.beginPath(); signatureCtx.moveTo(p.x, p.y); };
+      const move = (e) => { if (!isDrawing) return; e.preventDefault(); const p = getPos(e); signatureCtx.lineTo(p.x, p.y); signatureCtx.stroke(); };
+      const end = () => { isDrawing = false; };
+
+      signatureCanvas.addEventListener('mousedown', start);
+      signatureCanvas.addEventListener('mousemove', move);
+      signatureCanvas.addEventListener('mouseup', end);
+      signatureCanvas.addEventListener('mouseleave', end);
+      signatureCanvas.addEventListener('touchstart', start);
+      signatureCanvas.addEventListener('touchmove', move);
+      signatureCanvas.addEventListener('touchend', end);
+    }
+
+    function limparAssinatura() {
+      if (signatureCtx && signatureCanvas) {
+        signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        hasDrawnSignature = false;
+      }
+    }
+
+    function baixarBlob(blob, nomeFicheiro) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeFicheiro;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // --- MOTOR DE PROCESSAMENTO ---
+    async function executarFerramenta() {
+      const files = ferramentaAtual === 'merge' ? mergeFilesArray : Array.from(document.getElementById('file-input').files);
+      
+      if (!files || files.length === 0) {
+        mostrarStatus("⚠️ Selecione pelo menos um ficheiro antes de continuar.", true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-processar');
+      btn.disabled = true;
+      btn.textContent = "A processar...";
+      mostrarStatus("⏳ A processar o seu documento no navegador...");
+      await yieldToMain();
+
+      try {
+        switch (ferramentaAtual) {
+          case 'merge': await procMerge(files); break;
+          case 'split': await procSplit(files[0]); break;
+          case 'rotate': await procRotate(files[0]); break;
+          case 'protect': await procProtect(files[0]); break;
+          case 'unlock': await procUnlock(files[0]); break;
+          case 'watermark': await procWatermark(files[0]); break;
+          case 'sign': await procSign(files[0]); break;
+          case 'jpg2pdf': await procJpg2Pdf(files); break;
+          case 'pdf2jpg': await procPdf2Jpg(files[0]); break;
+          case 'pdf2excel': await procPdf2Excel(files[0]); break;
+          case 'pdf2word': await procPdf2Word(files[0]); break;
+          case 'pdf2ppt': await procPdf2Ppt(files[0]); break;
+          case 'word2pdf': await procWord2Pdf(files[0]); break;
+          case 'excel2pdf': await procExcel2Pdf(files[0]); break;
+          case 'ppt2pdf': await procPpt2Pdf(files[0]); break;
+        }
+        mostrarStatus("✅ Concluído! O download foi iniciado automaticamente.");
+      } catch (err) {
+        console.error(err);
+        mostrarStatus(`❌ Erro ao processar: ${err.message || 'Verifique se o ficheiro é válido.'}`, true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Processar e Baixar";
+      }
+    }
+
+    // 1. Juntar PDF
+    async function procMerge(files) {
+      if (files.length < 2) throw new Error("Selecione pelo menos 2 ficheiros PDF.");
+      const mergedPdf = await PDFLib.PDFDocument.create();
+      for (let file of files) {
+        const bytes = await file.arrayBuffer();
+        const pdf = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+      }
+      const outBytes = await mergedPdf.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Unificado.pdf');
+    }
+
+    // 2. Dividir / Extrair PDF
+    async function procSplit(file) {
+      const rangeStr = document.getElementById('opt-pages').value.trim();
+      if (!rangeStr) throw new Error("Selecione páginas nas miniaturas ou digite o intervalo (ex: 1, 3-5).");
+      
+      const bytes = await file.arrayBuffer();
+      const srcDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const totalPages = srcDoc.getPageCount();
+      const indices = new Set();
+
+      rangeStr.split(',').forEach(part => {
+        if (part.includes('-')) {
+          const [start, end] = part.split('-').map(n => parseInt(n.trim(), 10));
+          for (let i = start; i <= end; i++) {
+            if (i >= 1 && i <= totalPages) indices.add(i - 1);
+          }
+        } else {
+          const p = parseInt(part.trim(), 10);
+          if (p >= 1 && p <= totalPages) indices.add(p - 1);
+        }
+      });
+
+      if (indices.size === 0) throw new Error("Nenhuma página válida selecionada.");
+      const newDoc = await PDFLib.PDFDocument.create();
+      const copied = await newDoc.copyPages(srcDoc, Array.from(indices));
+      copied.forEach(p => newDoc.addPage(p));
+      
+      const outBytes = await newDoc.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Extraido.pdf');
+    }
+
+    // 3. Girar PDF
+    async function procRotate(file) {
+      if (currentRotationAngle === 0) throw new Error("Gire o documento em 90°, 180° ou 270° antes de baixar.");
+      const bytes = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pages = pdfDoc.getPages();
+
+      pages.forEach(page => {
+        const existingRotation = page.getRotation().angle;
+        page.setRotation(PDFLib.degrees((existingRotation + currentRotationAngle) % 360));
+      });
+
+      const outBytes = await pdfDoc.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Girado.pdf');
+    }
+
+    // 4. Proteger PDF
+    async function procProtect(file) {
+      const pwd = document.getElementById('opt-password').value;
+      if (!pwd) throw new Error("Digite uma senha para proteger o documento.");
+      
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const { jsPDF } = window.jspdf;
+      
+      let doc = null;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const orientation = viewport.width > viewport.height ? 'l' : 'p';
+        
+        if (i === 1) {
+          doc = new jsPDF({
+            orientation,
+            unit: 'px',
+            format: [viewport.width, viewport.height],
+            encryption: { userPassword: pwd, ownerPassword: pwd, userPermissions: ["print"] }
+          });
+        } else {
+          doc.addPage([viewport.width, viewport.height], orientation);
+        }
+        doc.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
+        await yieldToMain();
+      }
+      doc.save('PDFHub_Protegido.pdf');
+    }
+
+    // 5. Desbloquear PDF
+    async function procUnlock(file) {
+      const pwd = document.getElementById('opt-unlock-password').value;
+      const bytes = await file.arrayBuffer();
+      
+      if (pwd) {
+        const pdf = await pdfjsLib.getDocument({ data: bytes, password: pwd }).promise;
+        const newPdf = await PDFLib.PDFDocument.create();
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.8 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const jpgBytes = await fetch(canvas.toDataURL('image/jpeg', 0.9)).then(r => r.arrayBuffer());
+          const img = await newPdf.embedJpg(jpgBytes);
+          const p = newPdf.addPage([viewport.width, viewport.height]);
+          p.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+          await yieldToMain();
+        }
+        const outBytes = await newPdf.save();
+        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
+      } else {
+        const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        const outBytes = await pdfDoc.save();
+        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
+      }
+    }
+
+    // 6. Marca d'água
+    async function procWatermark(file) {
+      const wmType = document.getElementById('opt-wm-type').value;
+      const bytes = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pages = pdfDoc.getPages();
+
+      if (wmType === 'text') {
+        const text = document.getElementById('opt-watermark').value || "CONFIDENCIAL";
+        const opacity = parseFloat(document.getElementById('opt-wm-opacity').value) || 0.35;
+        pages.forEach(page => {
+          const { width, height } = page.getSize();
+          page.drawText(text, {
+            x: width * 0.2,
+            y: height * 0.45,
+            size: 46,
+            color: PDFLib.rgb(0.55, 0.55, 0.55),
+            opacity: opacity,
+            rotate: PDFLib.degrees(45)
+          });
+        });
+      } else {
+        const imgInput = document.getElementById('opt-wm-image');
+        if (!imgInput.files || imgInput.files.length === 0) throw new Error("Selecione uma imagem PNG ou JPG para a marca d'água.");
+        const imgFile = imgInput.files[0];
+        const imgBytes = await imgFile.arrayBuffer();
+        const embeddedImg = imgFile.type === 'image/png' ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
+        
+        pages.forEach(page => {
+          const { width, height } = page.getSize();
+          const wmWidth = width * 0.4;
+          const wmHeight = (embeddedImg.height / embeddedImg.width) * wmWidth;
+          page.drawImage(embeddedImg, {
+            x: (width - wmWidth) / 2,
+            y: (height - wmHeight) / 2,
+            width: wmWidth,
+            height: wmHeight,
+            opacity: 0.3
+          });
+        });
+      }
+
+      const outBytes = await pdfDoc.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_MarcaDagua.pdf');
+    }
+
+    // 7. Assinar PDF
+    async function procSign(file) {
+      if (!hasDrawnSignature) throw new Error("Desenhe a sua assinatura no quadro branco antes de aplicar.");
+      
+      const dataUrl = signatureCanvas.toDataURL('image/png');
+      const pngBytes = await fetch(dataUrl).then(res => res.arrayBuffer());
+      
+      const bytes = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pngImage = await pdfDoc.embedPng(pngBytes);
+      
+      const pages = pdfDoc.getPages();
+      let pageNum = parseInt(document.getElementById('opt-sign-page').value, 10);
+      const targetIndex = (pageNum <= 0 || pageNum > pages.length) ? pages.length - 1 : pageNum - 1;
+      const pos = document.getElementById('opt-sign-pos').value;
+      
+      const page = pages[targetIndex];
+      const { width, height } = page.getSize();
+      const sigW = 170;
+      const sigH = 55;
+
+      let x = width - sigW - 40;
+      let y = 45;
+      if (pos === 'bottom-center') { x = (width - sigW) / 2; y = 45; }
+      else if (pos === 'bottom-left') { x = 40; y = 45; }
+      else if (pos === 'center') { x = (width - sigW) / 2; y = (height - sigH) / 2; }
+
+      page.drawImage(pngImage, { x, y, width: sigW, height: sigH });
+
+      const outBytes = await pdfDoc.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Assinado.pdf');
+    }
+
+    // 8. JPG para PDF
+    async function procJpg2Pdf(files) {
+      const pdfDoc = await PDFLib.PDFDocument.create();
+      for (let file of files) {
+        const bytes = await file.arrayBuffer();
+        const img = file.type === 'image/png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+        const page = pdfDoc.addPage([img.width, img.height]);
+        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+      }
+      const outBytes = await pdfDoc.save();
+      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Imagens.pdf');
+    }
+
+    // 9. PDF para JPG (ou ZIP)
+    async function procPdf2Jpg(file) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const total = pdf.numPages;
+
+      if (total === 1) {
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        canvas.toBlob(blob => baixarBlob(blob, 'PDFHub_Pagina1.jpg'), 'image/jpeg', 0.9);
+      } else {
+        const zip = new JSZip();
+        for (let i = 1; i <= total; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.8 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          zip.file(`pagina_${i}.jpg`, dataUrl.split(',')[1], { base64: true });
+          await yieldToMain();
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        baixarBlob(zipBlob, 'PDFHub_Paginas_JPG.zip');
+      }
+    }
+
+    // 10. PDF para Excel (.xlsx real)
+    async function procPdf2Excel(file) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const wb = XLSX.utils.book_new();
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const rowsMap = {};
+
+        content.items.forEach(item => {
+          const y = Math.round(item.transform[5]);
+          if (!rowsMap[y]) rowsMap[y] = [];
+          rowsMap[y].push({ x: item.transform[4], str: item.str });
+        });
+
+        const sortedY = Object.keys(rowsMap).sort((a, b) => b - a);
+        const aoa = sortedY.map(y => rowsMap[y].sort((a, b) => a.x - b.x).map(cell => cell.str));
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        XLSX.utils.book_append_sheet(wb, ws, `Pagina_${i}`);
+        await yieldToMain();
+      }
+
+      XLSX.writeFile(wb, 'PDFHub_Convertido.xlsx');
+    }
+
+    // 11. PDF para Word (.doc compatível nativo com Microsoft Word, sem depender de CDN pesada)
+    async function procPdf2Word(file) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      let htmlBody = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        htmlBody += `<p style="font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; margin-bottom: 14pt;">${pageText}</p>`;
+        await yieldToMain();
+      }
+
+      const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Documento</title></head><body>${htmlBody}</body></html>`;
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
+      baixarBlob(blob, 'PDFHub_Convertido.doc');
+    }
+
+    // 12. PDF para PowerPoint (Empacotamento OpenXML PPTX leve e nativo via JSZip)
+    async function procPdf2Ppt(file) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const zip = new JSZip();
+      const numPages = pdf.numPages;
+
+      // Estrutura mínima válida OpenXML (.pptx) com cada página como slide em alta resolução
+      let contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`;
+      let presRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
+      let sldIdLst = `<p:sldIdLst>`;
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        
+        const imgBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+        zip.file(`ppt/media/image${i}.jpg`, imgBase64, { base64: true });
+
+        contentTypes += `<Override PartName="/ppt/slides/slide${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;
+        presRels += `<Relationship Id="rId${i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i}.xml"/>`;
+        sldIdLst += `<p:sldId id="${255 + i}" r:id="rId${i}"/>`;
+
+        const slideRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${i}.jpg"/></Relationships>`;
+        zip.file(`ppt/slides/_rels/slide${i}.xml.rels`, slideRels);
+
+        const slideXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:pic><p:nvPicPr><p:cNvPr id="2" name="Img${i}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="9144000" cy="6858000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic></p:spTree></p:cSld></p:sld>`;
+        zip.file(`ppt/slides/slide${i}.xml`, slideXml);
+        await yieldToMain();
+      }
+
+      contentTypes += `</Types>`;
+      presRels += `</Relationships>`;
+      sldIdLst += `</p:sldIdLst>`;
+
+      const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>`;
+      const presXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">${sldIdLst}<p:sldSz cx="9144000" cy="6858000" type="screen4x3"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
+
+      zip.file('[Content_Types].xml', contentTypes);
+      zip.file('_rels/.rels', rootRels);
+      zip.file('ppt/_rels/presentation.xml.rels', presRels);
+      zip.file('ppt/presentation.xml', presXml);
+
+      const pptBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+      baixarBlob(pptBlob, 'PDFHub_Apresentacao.pptx');
+    }
+
+    // 13. Word (.docx) para PDF
+    async function procWord2Pdf(file) {
+      const bytes = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer: bytes });
+      const container = document.createElement('div');
+      container.innerHTML = `<div style="padding: 20px; font-family: Arial, sans-serif; line-height: 1.5;">${result.value}</div>`;
+      await html2pdf().from(container).save('PDFHub_Word.pdf');
+    }
+
+    // 14. Excel (.xlsx) para PDF
+    async function procExcel2Pdf(file) {
+      const bytes = await file.arrayBuffer();
+      const wb = XLSX.read(bytes, { type: 'array' });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const htmlTable = XLSX.utils.sheet_to_html(firstSheet);
+      const container = document.createElement('div');
+      container.innerHTML = `<style>table { border-collapse: collapse; width: 100%; font-size: 11px; } td, th { border: 1px solid #ccc; padding: 4px; }</style>${htmlTable}`;
+      await html2pdf().set({ jsPDF: { orientation: 'landscape' } }).from(container).save('PDFHub_Planilha.pdf');
+    }
+
+    // 15. PowerPoint (.pptx) para PDF
+    async function procPpt2Pdf(file) {
+      const bytes = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(bytes);
+      const slideFiles = Object.keys(zip.files).filter(name => name.match(/ppt\/slides\/slide\d+\.xml/)).sort();
+      
+      let fullHtml = '<div style="font-family: Arial, sans-serif; padding: 20px;">';
+      for (let i = 0; i < slideFiles.length; i++) {
+        const xmlText = await zip.files[slideFiles[i]].async('text');
+        const matches = xmlText.match(/<a:t>(.*?)<\/a:t>/g) || [];
+        const slideContent = matches.map(t => t.replace(/<\/?a:t>/g, '')).join(' ');
+        fullHtml += `<div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px;"><h3>Slide ${i + 1}</h3><p>${slideContent}</p></div>`;
+      }
+      fullHtml += '</div>';
+      
+      const container = document.createElement('div');
+      container.innerHTML = fullHtml;
+      await html2pdf().from(container).save('PDFHub_Slides.pdf');
+    }
+  </script>
+</body>
+</html>
