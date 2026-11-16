@@ -8,7 +8,7 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Bibliotecas PDF & Office Oficiais e Estáveis (Carregamento com defer para não travar a tela) -->
+  <!-- Bibliotecas PDF & Office Oficiais e Estáveis -->
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
@@ -24,6 +24,7 @@
     .tool-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .tool-card:hover { transform: translateY(-3px); }
     #signature-pad { touch-action: none; cursor: crosshair; }
+    .page-thumb-selected { border-color: #2563eb !important; background-color: #eff6ff !important; box-shadow: 0 0 0 2px #2563eb; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
@@ -57,7 +58,7 @@
         Todas as ferramentas PDF num só lugar
       </h1>
       <p class="text-slate-600 text-base sm:text-lg">
-        Junte, divida, converta e proteja os seus documentos gratuitamente. Nenhum ficheiro é enviado para servidores externos.
+        Junte, divida, gire, converta e proteja os seus documentos gratuitamente. Nenhum ficheiro é enviado para servidores externos.
       </p>
     </div>
 
@@ -74,6 +75,11 @@
           <div class="text-3xl mb-3">✂️</div>
           <h3 class="font-bold text-slate-900 mb-1">Dividir / Extrair PDF</h3>
           <p class="text-sm text-slate-500">Extraia páginas específicas ou separe um documento grande.</p>
+        </div>
+        <div onclick="abrirFerramenta('rotate')" class="tool-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer">
+          <div class="text-3xl mb-3">🔄</div>
+          <h3 class="font-bold text-slate-900 mb-1">Girar PDF</h3>
+          <p class="text-sm text-slate-500">Rotacione páginas em 90°, 180° ou 270° com pré-visualização.</p>
         </div>
       </div>
     </section>
@@ -161,7 +167,7 @@
 
   <!-- MODAL DE FERRAMENTA -->
   <div id="tool-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
       <button type="button" onclick="fecharModalFerramenta()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold cursor-pointer">&times;</button>
       
       <div class="flex items-center gap-3 mb-4">
@@ -173,8 +179,8 @@
       </div>
 
       <!-- Zona de Upload -->
-      <div class="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl p-6 text-center mb-4">
-        <input type="file" id="file-input" class="hidden" onchange="atualizarListaFicheiros()" />
+      <div class="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl p-5 text-center mb-4">
+        <input type="file" id="file-input" class="hidden" onchange="aoSelecionarFicheiros()" />
         <label for="file-input" class="cursor-pointer flex flex-col items-center">
           <span class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow transition mb-2">
             Selecionar Ficheiro(s)
@@ -182,6 +188,15 @@
           <span id="file-accept-hint" class="text-xs text-slate-500">Formatos aceites: .pdf</span>
         </label>
         <div id="file-list" class="mt-3 text-sm font-medium text-slate-700 space-y-1"></div>
+      </div>
+
+      <!-- Área de Pré-visualização Visual (Miniaturas) -->
+      <div id="preview-area" class="hidden mb-5 bg-slate-100 p-4 rounded-xl border border-slate-200">
+        <div class="flex items-center justify-between mb-3">
+          <span id="preview-title" class="text-xs font-bold uppercase tracking-wider text-slate-600">Pré-visualização</span>
+          <span id="preview-subtitle" class="text-xs text-slate-500"></span>
+        </div>
+        <div id="preview-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-1"></div>
       </div>
 
       <!-- Opções Dinâmicas por Ferramenta -->
@@ -222,7 +237,6 @@
   </div>
 
   <script>
-    // Inicialização segura do Worker do PDF.js após carregamento da página
     window.addEventListener('DOMContentLoaded', () => {
       if (window.pdfjsLib) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -234,14 +248,24 @@
     let signatureCanvas = null;
     let signatureCtx = null;
     let isDrawing = false;
+    let hasDrawnSignature = false;
+
+    // Estado para pré-visualização e manipulação de ficheiros/páginas
+    let mergeFilesArray = [];
+    let selectedSplitPages = new Set();
+    let currentRotationAngle = 0;
 
     const CONFIG_FERRAMENTAS = {
       merge: {
-        icon: '📑', title: 'Juntar PDF', desc: 'Selecione 2 ou mais arquivos PDF para unir.',
+        icon: '📑', title: 'Juntar PDF', desc: 'Combine vários ficheiros PDF num único documento ordenado.',
         accept: '.pdf', multiple: true, hint: 'Selecione múltiplos ficheiros .pdf'
       },
       split: {
-        icon: '✂️', title: 'Dividir / Extrair PDF', desc: 'Extraia páginas específicas (ex: 1, 3-5).',
+        icon: '✂️', title: 'Dividir / Extrair PDF', desc: 'Clique nas páginas que deseja extrair ou digite o intervalo.',
+        accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
+      },
+      rotate: {
+        icon: '🔄', title: 'Girar PDF', desc: 'Rotacione as páginas do documento e pré-visualize o resultado.',
         accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
       },
       pdf2word: {
@@ -289,7 +313,7 @@
         accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
       },
       watermark: {
-        icon: '💧', title: "Marca d'água", desc: 'Adicione texto transparente diagonal em todas as páginas.',
+        icon: '💧', title: "Marca d'água", desc: 'Adicione texto ou imagem transparente no documento.',
         accept: '.pdf', multiple: false, hint: 'Selecione 1 ficheiro .pdf'
       }
     };
@@ -335,6 +359,14 @@
       input.multiple = cfg.multiple;
       
       document.getElementById('file-list').innerHTML = '';
+      document.getElementById('preview-area').classList.add('hidden');
+      document.getElementById('preview-grid').innerHTML = '';
+      
+      mergeFilesArray = [];
+      selectedSplitPages.clear();
+      currentRotationAngle = 0;
+      hasDrawnSignature = false;
+
       ocultarStatus();
       montarOpcoesDinamicas(tipo);
       
@@ -346,8 +378,28 @@
       ferramentaAtual = null;
     }
 
-    function atualizarListaFicheiros() {
-      const files = document.getElementById('file-input').files;
+    async function aoSelecionarFicheiros() {
+      const files = Array.from(document.getElementById('file-input').files);
+      if (files.length === 0) return;
+
+      ocultarStatus();
+
+      if (ferramentaAtual === 'merge') {
+        mergeFilesArray = mergeFilesArray.concat(files);
+        await renderizarPreviewMerge();
+      } else if (ferramentaAtual === 'split') {
+        atualizarListaSimples(files);
+        await renderizarPreviewSplit(files[0]);
+      } else if (ferramentaAtual === 'rotate') {
+        atualizarListaSimples(files);
+        currentRotationAngle = 0;
+        await renderizarPreviewRotate(files[0]);
+      } else {
+        atualizarListaSimples(files);
+      }
+    }
+
+    function atualizarListaSimples(files) {
       const list = document.getElementById('file-list');
       list.innerHTML = '';
       for (let f of files) {
@@ -355,6 +407,168 @@
         div.textContent = `📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
         list.appendChild(div);
       }
+    }
+
+    // --- PRÉ-VISUALIZAÇÕES (JUNTAR, DIVIDIR, GIRAR) ---
+    async function gerarMiniaturaPaginaPDF(file, pageNum = 1, scale = 0.4) {
+      try {
+        const bytes = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        return { dataUrl: canvas.toDataURL('image/jpeg', 0.75), numPages: pdf.numPages };
+      } catch (e) {
+        return { dataUrl: null, numPages: '?' };
+      }
+    }
+
+    async function renderizarPreviewMerge() {
+      const previewArea = document.getElementById('preview-area');
+      const grid = document.getElementById('preview-grid');
+      document.getElementById('preview-title').textContent = `Arquivos na fila (${mergeFilesArray.length})`;
+      document.getElementById('preview-subtitle').textContent = 'Use as setas para reordenar';
+      
+      previewArea.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      for (let idx = 0; idx < mergeFilesArray.length; idx++) {
+        const file = mergeFilesArray[idx];
+        const thumb = await gerarMiniaturaPaginaPDF(file, 1, 0.35);
+        
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-slate-300 rounded-lg p-2 flex flex-col items-center text-center shadow-sm relative';
+        card.innerHTML = `
+          <span class="absolute top-1 left-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#${idx + 1}</span>
+          <button type="button" onclick="removerArquivoMerge(${idx})" class="absolute top-1 right-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold w-5 h-5 rounded-full">×</button>
+          ${thumb.dataUrl ? `<img src="${thumb.dataUrl}" class="h-24 object-contain my-1 border border-slate-100" />` : `<div class="h-24 flex items-center justify-center text-3xl">📄</div>`}
+          <p class="text-[11px] font-semibold text-slate-700 truncate w-full" title="${file.name}">${file.name}</p>
+          <span class="text-[10px] text-slate-400">${thumb.numPages} pág(s)</span>
+          <div class="flex gap-2 mt-1.5">
+            <button type="button" onclick="moverArquivoMerge(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">◀</button>
+            <button type="button" onclick="moverArquivoMerge(${idx}, 1)" ${idx === mergeFilesArray.length - 1 ? 'disabled' : ''} class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-xs disabled:opacity-30">▶</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    async function moverArquivoMerge(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= mergeFilesArray.length) return;
+      const temp = mergeFilesArray[index];
+      mergeFilesArray[index] = mergeFilesArray[newIndex];
+      mergeFilesArray[newIndex] = temp;
+      await renderizarPreviewMerge();
+    }
+
+    async function removerArquivoMerge(index) {
+      mergeFilesArray.splice(index, 1);
+      if (mergeFilesArray.length === 0) {
+        document.getElementById('preview-area').classList.add('hidden');
+      } else {
+        await renderizarPreviewMerge();
+      }
+    }
+
+    async function renderizarPreviewSplit(file) {
+      const previewArea = document.getElementById('preview-area');
+      const grid = document.getElementById('preview-grid');
+      document.getElementById('preview-title').textContent = 'Pré-visualização das Páginas';
+      document.getElementById('preview-subtitle').textContent = 'Clique nas páginas para selecionar';
+      
+      previewArea.classList.remove('hidden');
+      grid.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-4">A carregar miniaturas...</div>';
+      selectedSplitPages.clear();
+
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      grid.innerHTML = '';
+
+      const maxPreview = Math.min(pdf.numPages, 30); // Limite de 30 miniaturas para manter velocidade
+      for (let i = 1; i <= maxPreview; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 0.35 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        const card = document.createElement('div');
+        card.id = `split-thumb-${i}`;
+        card.onclick = () => alternarPaginaSplit(i);
+        card.className = 'bg-white border-2 border-slate-200 rounded-lg p-2 flex flex-col items-center cursor-pointer transition hover:border-blue-400';
+        card.innerHTML = `
+          <img src="${canvas.toDataURL('image/jpeg', 0.75)}" class="h-24 object-contain mb-1" />
+          <span class="text-xs font-bold text-slate-700">Página ${i}</span>
+        `;
+        grid.appendChild(card);
+      }
+      if (pdf.numPages > 30) {
+        const info = document.createElement('div');
+        info.className = 'col-span-full text-center text-xs text-slate-500 pt-2';
+        info.textContent = `Mostrando 30 de ${pdf.numPages} páginas. Pode digitar qualquer número no campo abaixo.`;
+        grid.appendChild(info);
+      }
+    }
+
+    function alternarPaginaSplit(pageNum) {
+      const card = document.getElementById(`split-thumb-${pageNum}`);
+      if (selectedSplitPages.has(pageNum)) {
+        selectedSplitPages.delete(pageNum);
+        if (card) card.classList.remove('page-thumb-selected');
+      } else {
+        selectedSplitPages.add(pageNum);
+        if (card) card.classList.add('page-thumb-selected');
+      }
+      const sorted = Array.from(selectedSplitPages).sort((a, b) => a - b);
+      const input = document.getElementById('opt-pages');
+      if (input) input.value = sorted.join(', ');
+    }
+
+    async function renderizarPreviewRotate(file) {
+      const previewArea = document.getElementById('preview-area');
+      const grid = document.getElementById('preview-grid');
+      document.getElementById('preview-title').textContent = 'Pré-visualização da Rotação';
+      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
+      
+      previewArea.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      const bytes = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const maxPreview = Math.min(pdf.numPages, 12);
+
+      for (let i = 1; i <= maxPreview; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 0.35 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-slate-200 rounded-lg p-3 flex flex-col items-center justify-center overflow-hidden';
+        card.innerHTML = `
+          <div class="h-28 flex items-center justify-center">
+            <img src="${canvas.toDataURL('image/jpeg', 0.75)}" style="transform: rotate(${currentRotationAngle}deg); transition: transform 0.25s ease;" class="max-h-24 max-w-full object-contain rotate-preview-img" />
+          </div>
+          <span class="text-xs font-bold text-slate-600 mt-1">Pág. ${i}</span>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function aplicarRotacaoPreview(graus) {
+      currentRotationAngle = (currentRotationAngle + graus + 360) % 360;
+      document.getElementById('preview-subtitle').textContent = `Ângulo atual: ${currentRotationAngle}°`;
+      document.getElementById('rotate-angle-display').textContent = `${currentRotationAngle}°`;
+      document.querySelectorAll('.rotate-preview-img').forEach(img => {
+        img.style.transform = `rotate(${currentRotationAngle}deg)`;
+      });
     }
 
     function mostrarStatus(msg, isError = false) {
@@ -375,8 +589,18 @@
       if (tipo === 'split') {
         container.innerHTML = `
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Páginas a extrair (ex: 1, 2, 4-6):</label>
-            <input type="text" id="opt-pages" placeholder="Ex: 1, 3-5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+            <label class="block text-xs font-bold text-slate-600 mb-1">Páginas selecionadas ou intervalo (ex: 1, 2, 4-6):</label>
+            <input type="text" id="opt-pages" placeholder="Clique nas miniaturas acima ou digite ex: 1, 3-5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+          </div>`;
+      } else if (tipo === 'rotate') {
+        container.innerHTML = `
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-sm font-bold text-slate-700">Rotação: <span id="rotate-angle-display" class="text-blue-600">0°</span></span>
+            <div class="flex gap-2">
+              <button type="button" onclick="aplicarRotacaoPreview(-90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">↺ -90° (Esquerda)</button>
+              <button type="button" onclick="aplicarRotacaoPreview(90)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">↻ +90° (Direita)</button>
+              <button type="button" onclick="aplicarRotacaoPreview(180)" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">⇅ 180°</button>
+            </div>
           </div>`;
       } else if (tipo === 'protect') {
         container.innerHTML = `
@@ -392,25 +616,63 @@
           </div>`;
       } else if (tipo === 'watermark') {
         container.innerHTML = `
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Texto da Marca d'água:</label>
-            <input type="text" id="opt-watermark" value="CONFIDENCIAL" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" />
+          <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Tipo de Marca d'água:</label>
+              <select id="opt-wm-type" onchange="alternarTipoMarcaDagua()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                <option value="text">Texto Transparente</option>
+                <option value="image">Imagem Transparente (PNG / JPG)</option>
+              </select>
+            </div>
+            <div id="wm-text-group" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Texto:</label>
+                <input type="text" id="opt-watermark" value="CONFIDENCIAL" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Opacidade (0.1 a 1.0):</label>
+                <input type="number" id="opt-wm-opacity" value="0.35" min="0.1" max="1" step="0.05" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+            </div>
+            <div id="wm-image-group" class="hidden">
+              <label class="block text-xs font-bold text-slate-600 mb-1">Selecione a imagem da marca d'água (PNG/JPG):</label>
+              <input type="file" id="opt-wm-image" accept="image/png,image/jpeg" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white" />
+            </div>
           </div>`;
       } else if (tipo === 'sign') {
         container.innerHTML = `
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <label class="text-xs font-bold text-slate-600">Desenhe sua assinatura abaixo:</label>
-              <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline cursor-pointer">Limpar</button>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-slate-600">Desenhe sua assinatura abaixo:</label>
+                <button type="button" onclick="limparAssinatura()" class="text-xs text-blue-600 hover:underline cursor-pointer font-semibold">Limpar Quadro</button>
+              </div>
+              <canvas id="signature-pad" width="520" height="140" class="w-full border-2 border-slate-300 rounded-lg bg-white"></canvas>
             </div>
-            <canvas id="signature-pad" width="480" height="140" class="w-full border border-slate-300 rounded-lg bg-slate-50"></canvas>
-            <div class="mt-2">
-              <label class="block text-xs font-bold text-slate-600 mb-1">Aplicar na página (0 = última página):</label>
-              <input type="number" id="opt-sign-page" value="0" min="0" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Aplicar na página (0 = última página):</label>
+                <input type="number" id="opt-sign-page" value="0" min="0" class="w-full border border-slate-300 rounded-lg p-2 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Posição na página:</label>
+                <select id="opt-sign-pos" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">
+                  <option value="bottom-right">Canto Inferior Direito</option>
+                  <option value="bottom-center">Inferior Centralizado</option>
+                  <option value="bottom-left">Canto Inferior Esquerdo</option>
+                  <option value="center">Centro da Página</option>
+                </select>
+              </div>
             </div>
           </div>`;
         setTimeout(inicializarCanvasAssinatura, 50);
       }
+    }
+
+    function alternarTipoMarcaDagua() {
+      const type = document.getElementById('opt-wm-type').value;
+      document.getElementById('wm-text-group').classList.toggle('hidden', type !== 'text');
+      document.getElementById('wm-image-group').classList.toggle('hidden', type !== 'image');
     }
 
     function inicializarCanvasAssinatura() {
@@ -418,8 +680,10 @@
       if (!signatureCanvas) return;
       signatureCtx = signatureCanvas.getContext('2d');
       signatureCtx.strokeStyle = '#0f172a';
-      signatureCtx.lineWidth = 2.5;
+      signatureCtx.lineWidth = 2.8;
       signatureCtx.lineCap = 'round';
+      signatureCtx.lineJoin = 'round';
+      hasDrawnSignature = false;
 
       const getPos = (e) => {
         const rect = signatureCanvas.getBoundingClientRect();
@@ -431,13 +695,26 @@
         };
       };
 
-      const start = (e) => { isDrawing = true; const p = getPos(e); signatureCtx.beginPath(); signatureCtx.moveTo(p.x, p.y); };
-      const move = (e) => { if (!isDrawing) return; e.preventDefault(); const p = getPos(e); signatureCtx.lineTo(p.x, p.y); signatureCtx.stroke(); };
+      const start = (e) => {
+        isDrawing = true;
+        hasDrawnSignature = true;
+        const p = getPos(e);
+        signatureCtx.beginPath();
+        signatureCtx.moveTo(p.x, p.y);
+      };
+      const move = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        signatureCtx.lineTo(p.x, p.y);
+        signatureCtx.stroke();
+      };
       const end = () => { isDrawing = false; };
 
       signatureCanvas.addEventListener('mousedown', start);
       signatureCanvas.addEventListener('mousemove', move);
       signatureCanvas.addEventListener('mouseup', end);
+      signatureCanvas.addEventListener('mouseleave', end);
       signatureCanvas.addEventListener('touchstart', start);
       signatureCanvas.addEventListener('touchmove', move);
       signatureCanvas.addEventListener('touchend', end);
@@ -446,6 +723,7 @@
     function limparAssinatura() {
       if (signatureCtx && signatureCanvas) {
         signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        hasDrawnSignature = false;
       }
     }
 
@@ -455,375 +733,4 @@
       a.href = url;
       a.download = nomeFicheiro;
       document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
-    // --- MOTOR DE PROCESSAMENTO ---
-    async function executarFerramenta() {
-      const files = document.getElementById('file-input').files;
-      if (!files || files.length === 0) {
-        mostrarStatus("⚠️ Selecione pelo menos um ficheiro antes de continuar.", true);
-        return;
-      }
-
-      const btn = document.getElementById('btn-processar');
-      btn.disabled = true;
-      btn.textContent = "A processar...";
-      mostrarStatus("⏳ A processar o seu documento no navegador...");
-
-      try {
-        switch (ferramentaAtual) {
-          case 'merge': await procMerge(files); break;
-          case 'split': await procSplit(files[0]); break;
-          case 'protect': await procProtect(files[0]); break;
-          case 'unlock': await procUnlock(files[0]); break;
-          case 'watermark': await procWatermark(files[0]); break;
-          case 'sign': await procSign(files[0]); break;
-          case 'jpg2pdf': await procJpg2Pdf(files); break;
-          case 'pdf2jpg': await procPdf2Jpg(files[0]); break;
-          case 'pdf2excel': await procPdf2Excel(files[0]); break;
-          case 'pdf2word': await procPdf2Word(files[0]); break;
-          case 'pdf2ppt': await procPdf2Ppt(files[0]); break;
-          case 'word2pdf': await procWord2Pdf(files[0]); break;
-          case 'excel2pdf': await procExcel2Pdf(files[0]); break;
-          case 'ppt2pdf': await procPpt2Pdf(files[0]); break;
-        }
-        mostrarStatus("✅ Concluído! O download foi iniciado automaticamente.");
-      } catch (err) {
-        console.error(err);
-        mostrarStatus(`❌ Erro ao processar: ${err.message || 'Verifique se o ficheiro é válido.'}`, true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Processar e Baixar";
-      }
-    }
-
-    // 1. Juntar PDF
-    async function procMerge(files) {
-      if (files.length < 2) throw new Error("Selecione pelo menos 2 ficheiros PDF.");
-      const mergedPdf = await PDFLib.PDFDocument.create();
-      for (let file of files) {
-        const bytes = await file.arrayBuffer();
-        const pdf = await PDFLib.PDFDocument.load(bytes);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-      }
-      const outBytes = await mergedPdf.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Unificado.pdf');
-    }
-
-    // 2. Dividir / Extrair PDF
-    async function procSplit(file) {
-      const rangeStr = document.getElementById('opt-pages').value.trim();
-      if (!rangeStr) throw new Error("Indique as páginas que deseja extrair (ex: 1, 3-5).");
-      
-      const bytes = await file.arrayBuffer();
-      const srcDoc = await PDFLib.PDFDocument.load(bytes);
-      const totalPages = srcDoc.getPageCount();
-      const indices = new Set();
-
-      rangeStr.split(',').forEach(part => {
-        if (part.includes('-')) {
-          const [start, end] = part.split('-').map(n => parseInt(n.trim(), 10));
-          for (let i = start; i <= end; i++) {
-            if (i >= 1 && i <= totalPages) indices.add(i - 1);
-          }
-        } else {
-          const p = parseInt(part.trim(), 10);
-          if (p >= 1 && p <= totalPages) indices.add(p - 1);
-        }
-      });
-
-      if (indices.size === 0) throw new Error("Nenhuma página válida selecionada.");
-      const newDoc = await PDFLib.PDFDocument.create();
-      const copied = await newDoc.copyPages(srcDoc, Array.from(indices));
-      copied.forEach(p => newDoc.addPage(p));
-      
-      const outBytes = await newDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Extraido.pdf');
-    }
-
-    // 3. Proteger PDF (Renderiza e gera PDF protegido via jsPDF encryption nativa)
-    async function procProtect(file) {
-      const pwd = document.getElementById('opt-password').value;
-      if (!pwd) throw new Error("Digite uma senha para proteger o documento.");
-      
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const { jsPDF } = window.jspdf;
-      
-      let doc = null;
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        const orientation = viewport.width > viewport.height ? 'l' : 'p';
-        
-        if (i === 1) {
-          doc = new jsPDF({
-            orientation,
-            unit: 'px',
-            format: [viewport.width, viewport.height],
-            encryption: {
-              userPassword: pwd,
-              ownerPassword: pwd,
-              userPermissions: ["print"]
-            }
-          });
-        } else {
-          doc.addPage([viewport.width, viewport.height], orientation);
-        }
-        doc.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
-      }
-      doc.save('PDFHub_Protegido.pdf');
-    }
-
-    // 4. Desbloquear PDF
-    async function procUnlock(file) {
-      const pwd = document.getElementById('opt-unlock-password').value;
-      const bytes = await file.arrayBuffer();
-      
-      // Se tiver senha de abertura, usa pdf.js com password para reconstruir limpo
-      if (pwd) {
-        const pdf = await pdfjsLib.getDocument({ data: bytes, password: pwd }).promise;
-        const newPdf = await PDFLib.PDFDocument.create();
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.8 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          const jpgBytes = await fetch(canvas.toDataURL('image/jpeg', 0.9)).then(r => r.arrayBuffer());
-          const img = await newPdf.embedJpg(jpgBytes);
-          const p = newPdf.addPage([viewport.width, viewport.height]);
-          p.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
-        }
-        const outBytes = await newPdf.save();
-        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
-      } else {
-        // Remove restrições de cópia/impressão mantendo vetores originais
-        const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
-        const outBytes = await pdfDoc.save();
-        baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Desbloqueado.pdf');
-      }
-    }
-
-    // 5. Marca d'água
-    async function procWatermark(file) {
-      const text = document.getElementById('opt-watermark').value || "CONFIDENCIAL";
-      const bytes = await file.arrayBuffer();
-      const pdfDoc = await PDFLib.PDFDocument.load(bytes);
-      const pages = pdfDoc.getPages();
-
-      pages.forEach(page => {
-        const { width, height } = page.getSize();
-        page.drawText(text, {
-          x: width * 0.2,
-          y: height * 0.45,
-          size: 46,
-          color: PDFLib.rgb(0.6, 0.6, 0.6),
-          opacity: 0.35,
-          rotate: PDFLib.degrees(45)
-        });
-      });
-
-      const outBytes = await pdfDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_MarcaDagua.pdf');
-    }
-
-    // 6. Assinar PDF
-    async function procSign(file) {
-      const dataUrl = signatureCanvas.toDataURL('image/png');
-      const pngBytes = await fetch(dataUrl).then(res => res.arrayBuffer());
-      
-      const bytes = await file.arrayBuffer();
-      const pdfDoc = await PDFLib.PDFDocument.load(bytes);
-      const pngImage = await pdfDoc.embedPng(pngBytes);
-      
-      const pages = pdfDoc.getPages();
-      let pageNum = parseInt(document.getElementById('opt-sign-page').value, 10);
-      const targetIndex = (pageNum <= 0 || pageNum > pages.length) ? pages.length - 1 : pageNum - 1;
-      
-      const page = pages[targetIndex];
-      const { width } = page.getSize();
-      page.drawImage(pngImage, {
-        x: width - 220,
-        y: 50,
-        width: 160,
-        height: 55
-      });
-
-      const outBytes = await pdfDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Assinado.pdf');
-    }
-
-    // 7. JPG para PDF
-    async function procJpg2Pdf(files) {
-      const pdfDoc = await PDFLib.PDFDocument.create();
-      for (let file of files) {
-        const bytes = await file.arrayBuffer();
-        const img = file.type === 'image/png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
-        const page = pdfDoc.addPage([img.width, img.height]);
-        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
-      }
-      const outBytes = await pdfDoc.save();
-      baixarBlob(new Blob([outBytes], { type: 'application/pdf' }), 'PDFHub_Imagens.pdf');
-    }
-
-    // 8. PDF para JPG (ou ZIP)
-    async function procPdf2Jpg(file) {
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const total = pdf.numPages;
-
-      if (total === 1) {
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        canvas.toBlob(blob => baixarBlob(blob, 'PDFHub_Pagina1.jpg'), 'image/jpeg', 0.9);
-      } else {
-        const zip = new JSZip();
-        for (let i = 1; i <= total; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.8 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          zip.file(`pagina_${i}.jpg`, dataUrl.split(',')[1], { base64: true });
-        }
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        baixarBlob(zipBlob, 'PDFHub_Paginas_JPG.zip');
-      }
-    }
-
-    // 9. PDF para Excel (.xlsx real)
-    async function procPdf2Excel(file) {
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const wb = XLSX.utils.book_new();
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const rowsMap = {};
-
-        content.items.forEach(item => {
-          const y = Math.round(item.transform[5]);
-          if (!rowsMap[y]) rowsMap[y] = [];
-          rowsMap[y].push({ x: item.transform[4], str: item.str });
-        });
-
-        const sortedY = Object.keys(rowsMap).sort((a, b) => b - a);
-        const aoa = sortedY.map(y => {
-          return rowsMap[y].sort((a, b) => a.x - b.x).map(cell => cell.str);
-        });
-
-        const ws = XLSX.utils.aoa_to_sheet(aoa);
-        XLSX.utils.book_append_sheet(wb, ws, `Pagina_${i}`);
-      }
-
-      XLSX.writeFile(wb, 'PDFHub_Convertido.xlsx');
-    }
-
-    // 10. PDF para Word (.docx real)
-    async function procPdf2Word(file) {
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const children = [];
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map(item => item.str).join(' ');
-        
-        children.push(new docx.Paragraph({
-          children: [new docx.TextRun(pageText)],
-          spacing: { after: 200 }
-        }));
-      }
-
-      const doc = new docx.Document({
-        sections: [{ properties: {}, children }]
-      });
-
-      const blob = await docx.Packer.toBlob(doc);
-      baixarBlob(blob, 'PDFHub_Convertido.docx');
-    }
-
-    // 11. PDF para PowerPoint (.pptx real)
-    async function procPdf2Ppt(file) {
-      const bytes = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const pptx = new PptxGenJS();
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        const slide = pptx.addSlide();
-        slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
-      }
-
-      await pptx.writeFile({ fileName: 'PDFHub_Apresentacao.pptx' });
-    }
-
-    // 12. Word (.docx) para PDF
-    async function procWord2Pdf(file) {
-      const bytes = await file.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer: bytes });
-      const container = document.createElement('div');
-      container.innerHTML = `<div style="padding: 20px; font-family: Arial, sans-serif; line-height: 1.5;">${result.value}</div>`;
-      await html2pdf().from(container).save('PDFHub_Word.pdf');
-    }
-
-    // 13. Excel (.xlsx) para PDF
-    async function procExcel2Pdf(file) {
-      const bytes = await file.arrayBuffer();
-      const wb = XLSX.read(bytes, { type: 'array' });
-      const firstSheet = wb.Sheets[wb.SheetNames[0]];
-      const htmlTable = XLSX.utils.sheet_to_html(firstSheet);
-      const container = document.createElement('div');
-      container.innerHTML = `<style>table { border-collapse: collapse; width: 100%; font-size: 11px; } td, th { border: 1px solid #ccc; padding: 4px; }</style>${htmlTable}`;
-      await html2pdf().set({ jsPDF: { orientation: 'landscape' } }).from(container).save('PDFHub_Planilha.pdf');
-    }
-
-    // 14. PowerPoint (.pptx) para PDF
-    async function procPpt2Pdf(file) {
-      const bytes = await file.arrayBuffer();
-      const zip = await JSZip.loadAsync(bytes);
-      const slideFiles = Object.keys(zip.files).filter(name => name.match(/ppt\/slides\/slide\d+\.xml/)).sort();
-      
-      let fullHtml = '<div style="font-family: Arial, sans-serif; padding: 20px;">';
-      for (let i = 0; i < slideFiles.length; i++) {
-        const xmlText = await zip.files[slideFiles[i]].async('text');
-        const matches = xmlText.match(/<a:t>(.*?)<\/a:t>/g) || [];
-        const slideContent = matches.map(t => t.replace(/<\/?a:t>/g, '')).join(' ');
-        fullHtml += `<div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px;"><h3>Slide ${i + 1}</h3><p>${slideContent}</p></div>`;
-      }
-      fullHtml += '</div>';
-      
-      const container = document.createElement('div');
-      container.innerHTML = fullHtml;
-      await html2pdf().from(container).save('PDFHub_Slides.pdf');
-    }
-  </script>
-</body>
-</html>
+      a.click
