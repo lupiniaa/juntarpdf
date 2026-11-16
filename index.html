@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFHub - Todas as Ferramentas de PDF em Um Só Lugar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Biblioteca pdf-lib para manipulação básica -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Cabeçalho -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="voltarHome()">
+                <span class="text-2xl font-black text-rose-600">🔴 PDFHub</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="status-badge" class="text-xs bg-slate-100 text-slate-600 font-medium px-3 py-1 rounded-full border border-slate-200">
+                    Plano Gratuito
+                </span>
+                <button onclick="abrirModalPix()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-full transition cursor-pointer shadow-xs">
+                    ✨ Remover Limites (R$ 4,90)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal: Dashboard de Ferramentas -->
+    <main id="home-view" class="max-w-7xl mx-auto px-6 py-10 w-full">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Cada ferramenta que você precisa para seus PDFs</h1>
+            <p class="text-slate-500 text-lg">Tudo o que você precisa para gerenciar, converter e editar seus documentos em um só lugar. 100% gratuito e seguro.</p>
+        </div>
+
+        <!-- Categoria 1: Organizar e Modificar -->
+        <div class="mb-10">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📂 Organizar e Modificar</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div onclick="abrirFerramenta('Unir PDF', 'Junte vários PDFs em um só arquivo na ordem que preferir.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔗</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Unir PDF</h3>
+                    <p class="text-xs text-slate-500">Junte vários arquivos PDF em um único documento.</p>
+                </div>
+                <div onclick="abrirFerramenta('Dividir PDF', 'Separe páginas ou extraia páginas específicas de um documento.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✂️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Dividir PDF</h3>
+                    <p class="text-xs text-slate-500">Extraia páginas ou divida um PDF em múltiplos arquivos.</p>
+                </div>
+                <div onclick="abrirFerramenta('Comprimir PDF', 'Reduza o tamanho do arquivo mantendo a melhor qualidade.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🗜️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Comprimir PDF</h3>
+                    <p class="text-xs text-slate-500">Otimize e reduza o tamanho de arquivos pesados.</p>
+                </div>
+                <div onclick="abrirFerramenta('Girar PDF', 'Mude a orientação das páginas do documento.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔄</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Girar PDF</h3>
+                    <p class="text-xs text-slate-500">Gire páginas específicas ou o documento inteiro.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categoria 2: Converter de PDF -->
+        <div class="mb-10">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📤 Converter de PDF</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div onclick="abrirFerramenta('PDF para Word', 'Converta seus documentos PDF em arquivos editáveis do Word (DOCX).')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📝</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para Word</h3>
+                    <p class="text-xs text-slate-500">Transforme PDF em documento Word editável.</p>
+                </div>
+                <div onclick="abrirFerramenta('PDF para Excel', 'Extraia tabelas de dados de PDFs diretamente para planilhas Excel.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📊</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para Excel</h3>
+                    <p class="text-xs text-slate-500">Converta tabelas PDF em planilhas XLSX.</p>
+                </div>
+                <div onclick="abrirFerramenta('PDF para JPG', 'Transforme cada página de um PDF em imagens de alta qualidade.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🖼️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para JPG</h3>
+                    <p class="text-xs text-slate-500">Extraia imagens ou converta páginas em JPG.</p>
+                </div>
+                <div onclick="abrirFerramenta('PDF para PowerPoint', 'Converta apresentações PDF em slides editáveis do PPTX.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📽️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">PDF para PowerPoint</h3>
+                    <p class="text-xs text-slate-500">Transforme PDF em slides de apresentação.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categoria 3: Converter para PDF -->
+        <div class="mb-10">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📥 Converter para PDF</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div onclick="abrirFerramenta('Word para PDF', 'Converta arquivos DOC e DOCX em formato PDF seguro.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📄</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Word para PDF</h3>
+                    <p class="text-xs text-slate-500">Converta documentos do Word em PDF.</p>
+                </div>
+                <div onclick="abrirFerramenta('JPG para PDF', 'Converta imagens JPG, PNG ou WEBP em arquivos PDF.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-amber-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📷</div>
+                    <h3 class="font-bold text-slate-900 mb-1">JPG para PDF</h3>
+                    <p class="text-xs text-slate-500">Transforme suas imagens em um único PDF.</p>
+                </div>
+                <div onclick="abrirFerramenta('Excel para PDF', 'Converta planilhas e relatórios em PDF mantendo a formatação.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">📈</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Excel para PDF</h3>
+                    <p class="text-xs text-slate-500">Converta tabelas e planilhas XLSX em PDF.</p>
+                </div>
+                <div onclick="abrirFerramenta('HTML para PDF', 'Converta páginas web e links diretamente em arquivos PDF.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🌐</div>
+                    <h3 class="font-bold text-slate-900 mb-1">HTML para PDF</h3>
+                    <p class="text-xs text-slate-500">Transforme páginas da web em documentos PDF.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categoria 4: Segurança e Edição -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🔒 Segurança e Edição</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div onclick="abrirFerramenta('Proteger PDF', 'Adicione senha e criptografia forte para proteger seus arquivos.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔐</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Proteger PDF</h3>
+                    <p class="text-xs text-slate-500">Coloque senha para restringir o acesso ao PDF.</p>
+                </div>
+                <div onclick="abrirFerramenta('Desbloquear PDF', 'Remova senhas e restrições de arquivos PDF autorizados.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">🔓</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Desbloquear PDF</h3>
+                    <p class="text-xs text-slate-500">Remova a senha de segurança de arquivos PDF.</p>
+                </div>
+                <div onclick="abrirFerramenta('Assinar PDF', 'Insira sua assinatura digital ou manuscrita em documentos.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-rose-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">✍️</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Assinar PDF</h3>
+                    <p class="text-xs text-slate-500">Assine contratos e documentos eletronicamente.</p>
+                </div>
+                <div onclick="abrirFerramenta('Marca D\'água', 'Insira texto ou logotipo personalizado sobre as páginas.')" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-md transition cursor-pointer group">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition">💧</div>
+                    <h3 class="font-bold text-slate-900 mb-1">Marca D'água</h3>
+                    <p class="text-xs text-slate-500">Adicione imagens ou marcas textuais de proteção.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Área de Trabalho Dinâmica da Ferramenta Selecionada -->
+    <div id="tool-view" class="max-w-xl mx-auto px-6 py-16 w-full hidden my-auto">
+        <button onclick="voltarHome()" class="text-sm font-medium text-slate-500 hover:text-rose-600 mb-6 flex items-center gap-1 cursor-pointer">
+            ← Voltar para todas as ferramentas
+        </button>
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center">
+            <h2 id="tool-title" class="text-2xl font-bold mb-2">Ferramenta</h2>
+            <p id="tool-desc" class="text-slate-500 text-sm mb-6">Descrição da ferramenta.</p>
+
+            <!-- Área de Upload Funcional (Exemplo funcional para Unir PDF) -->
+            <label class="border-2 border-dashed border-slate-300 hover:border-rose-500 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition">
+                <svg class="w-10 h-10 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <span class="text-sm font-medium text-slate-700">Clique para selecionar os arquivos</span>
+                <span class="text-xs text-slate-400 mt-1">Processamento seguro no navegador</span>
+                <input type="file" id="pdf-input" accept=".pdf" multiple class="hidden">
+            </label>
+
+            <!-- Resultado -->
+            <div id="output-area" class="mt-6 hidden">
+                <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-medium mb-4">
+                    ✨ Arquivo processado com sucesso!
+                </div>
+                <a id="download-link" class="inline-block w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 rounded-xl transition shadow-xs">
+                    ⬇️ Baixar Arquivo Pronto
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pix / Paywall -->
+    <div id="pix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl text-center">
+            <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">Pix</div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-1">Passe Ilimitado (24h)</h3>
+            <p class="text-sm text-slate-500 mb-6">Remova todos os limites de tamanho e uso de todas as ferramentas por apenas **R$ 4,90**.</p>
+            
+            <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200 mb-6">
+                <p class="text-xs text-slate-500 mb-2 font-medium">Chave Pix Copia e Cola:</p>
+                <input type="text" readonly value="00020126580014br.gov.bcb.pix0136sua-chave-pix-aqui52040000530398654044.90..." class="text-xs text-slate-600 font-mono bg-white p-2.5 rounded-xl border border-slate-200 w-full mb-3 text-center"/>
+                <button onclick="alert('Código Pix copiado!')" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded-xl transition cursor-pointer">
+                    Copiar Código Pix
+                </button>
+            </div>
+
+            <button onclick="ativarPasse()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition mb-3 cursor-pointer">
+                Já fiz o pagamento
+            </button>
+            <button onclick="fecharModal()" class="w-full text-xs text-slate-500 hover:text-slate-800 py-2 cursor-pointer">
+                Voltar
+            </button>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 bg-white">
+        &copy; 2026 PDFHub. Processamento privado e local.
+    </footer>
+
+    <!-- Lógica JavaScript -->
+    <script>
+        const homeView = document.getElementById('home-view');
+        const toolView = document.getElementById('tool-view');
+        const toolTitle = document.getElementById('tool-title');
+        const toolDesc = document.getElementById('tool-desc');
+        const modal = document.getElementById('pix-modal');
+        const statusBadge = document.getElementById('status-badge');
+        const input = document.getElementById('pdf-input');
+        const outputArea = document.getElementById('output-area');
+
+        verificarStatusPass();
+
+        function abrirFerramenta(nome, descricao) {
+            homeView.classList.add('hidden');
+            toolView.classList.remove('hidden');
+            toolTitle.textContent = nome;
+            toolDesc.textContent = descricao;
+            outputArea.classList.add('hidden');
+            input.value = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function voltarHome() {
+            toolView.classList.add('hidden');
+            homeView.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function abrirModalPix() { modal.classList.remove('hidden'); }
+        function fecharModal() { modal.classList.add('hidden'); }
+
+        function ativarPasse() {
+            const expiraEm = Date.now() + (24 * 60 * 60 * 1000);
+            localStorage.setItem('pdf_pass_expira', expiraEm);
+            fecharModal();
+            verificarStatusPass();
+            alert('Passe ilimitado ativado com sucesso por 24 horas!');
+        }
+
+        function temPasseValido() {
+            const expiraEm = localStorage.getItem('pdf_pass_expira');
+            if (!expiraEm) return false;
+            return Date.now() < parseInt(expiraEm, 10);
+        }
+
+        function verificarStatusPass() {
+            if (temPasseValido()) {
+                statusBadge.textContent = '✨ Acesso Ilimitado Ativo (24h)';
+                statusBadge.className = 'text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-1 rounded-full border border-emerald-200';
+            }
+        }
+
+        // Exemplo funcional para a ferramenta de unir PDFs
+        input.addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length < 2) {
+                alert('Selecione pelo menos 2 arquivos PDF.');
+                return;
+            }
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdfFinal = await PDFDocument.create();
+
+                for (const file of files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await PDFDocument.load(arrayBuffer);
+                    const paginas = await pdfFinal.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                    paginas.forEach((pagina) => pdfFinal.addPage(pagina));
+                }
+
+                const pdfBytes = await pdfFinal.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                const downloadLink = document.getElementById('download-link');
+                downloadLink.href = url;
+                downloadLink.download = 'pdfhub-unido.pdf';
+
+                outputArea.classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao processar os arquivos PDF.');
+            }
+        });
+    </script>
+</body>
+</html>
